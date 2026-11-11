@@ -1,7 +1,10 @@
-const CACHE = "vitrine-v2.1.2";
+const CACHE = "vitrine-v2.2.0";
 const ASSETS = ["./", "index.html", "privacidade.html", "css/styles.css", "fonts/fonts.css",
   "fonts/nunito-latin.woff2", "fonts/nunito-latin-ext.woff2", "fonts/oswald-latin.woff2", "fonts/oswald-latin-ext.woff2", "fonts/jakarta-latin.woff2", "fonts/jakarta-latin-ext.woff2",
-  "js/app.js", "js/stickers.js", "js/enhance.js", "js/html-to-image.min.js", "js/sortable.min.js", "manifest.webmanifest",
+  "js/app.js", "js/stickers.js", "js/stickers3d.js", "js/enhance.js", "js/html-to-image.min.js", "js/sortable.min.js", "manifest.webmanifest",
+  "stickers/3d/motoboy.webp", "stickers/3d/farmaceutico.webp", "stickers/3d/carrinho.webp", "stickers/3d/sacola.webp",
+  "stickers/3d/presente.webp", "stickers/3d/megafone.webp", "stickers/3d/mascote.webp", "stickers/3d/fogo.webp",
+  "stickers/3d/relogio.webp", "stickers/3d/etiqueta.webp", "stickers/3d/coracao.webp", "stickers/3d/local.webp",
   "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/favicon.png", "icons/icon-180.png"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });

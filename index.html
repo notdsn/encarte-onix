@@ -70,8 +70,12 @@
         <div class="panel-head">
           <h2>Figurinhas <span class="muted" id="sticker-count">(0/8)</span></h2>
         </div>
-        <p class="hint">Toque para adicionar. Elas mudam de cor automaticamente com a marca da loja. Dá para colocar no rodapé ou nos cantos, mudar o tamanho e escrever uma frase ao lado.</p>
-        <div class="stk-gallery" id="stk-gallery" role="list"></div>
+        <p class="hint">Toque para adicionar. As figurinhas 3D e as clássicas mudam de cor com a marca da loja. Dá para colocar no rodapé ou nos cantos, mudar o tamanho e escrever uma frase ao lado.</p>
+        <div class="stk-sets" role="tablist" aria-label="Coleção de figurinhas">
+          <button type="button" class="stk-set is-active" role="tab" id="stk-tab-3d" aria-selected="true" aria-controls="stk-gallery" data-set="3d">3D</button>
+          <button type="button" class="stk-set" role="tab" id="stk-tab-classicas" aria-selected="false" aria-controls="stk-gallery" data-set="classicas">Clássicas</button>
+        </div>
+        <div class="stk-gallery" id="stk-gallery" role="tabpanel" aria-labelledby="stk-tab-3d"></div>
         <div class="stk-used" id="stk-used"></div>
       </div>
 
@@ -174,7 +178,7 @@
 
       <div class="panel about" id="sobre">
         <h2>Sobre</h2>
-        <p class="hint"><strong>Vitrine de Ofertas</strong> v2.1.2 · Desenvolvido por <strong>Nextwave Studio Brasil</strong>.<br>Grátis, sem cadastro e sem anúncios. Seus dados ficam só no seu aparelho. A função “Deixar bonita com IA” recorta e melhora a foto no próprio aparelho (modelo U²-Net, licença Apache-2.0).<br>A marca “Drogarias Ônix” é um modelo pronto; troque pelo nome e cores da sua loja em “Sua loja”.</p>
+        <p class="hint"><strong>Vitrine de Ofertas</strong> v2.2.0 · Desenvolvido por <strong>Nextwave Studio Brasil</strong>.<br>Grátis, sem cadastro e sem anúncios. Seus dados ficam só no seu aparelho. A função “Deixar bonita com IA” recorta e melhora a foto no próprio aparelho (modelo U²-Net, licença Apache-2.0).<br>A marca “Drogarias Ônix” é um modelo pronto; troque pelo nome e cores da sua loja em “Sua loja”.</p>
       </div>
     </section>
   </main>
@@ -291,7 +295,7 @@
         <li>Preencha <strong>de</strong> e <strong>por</strong>: o desconto em % aparece sozinho.</li>
         <li>Toque na foto do produto para cortar e deixar o fundo branco.</li>
         <li>Use <strong>Story</strong> para Status do WhatsApp e <strong>A4</strong> para imprimir.</li>
-        <li>Em <strong>Figurinhas</strong> você coloca um motoboy, um selo de frete grátis e outras artes que acompanham as cores da loja.</li>
+        <li>Em <strong>Figurinhas</strong> você coloca artes 3D ou clássicas (motoboy, frete grátis, só hoje…) que acompanham as cores da loja.</li>
         <li>Em <strong>Meus encartes</strong> você duplica a oferta da semana passada.</li>
       </ul>
     </div>
@@ -305,6 +309,7 @@
   <script src="js/html-to-image.min.js" defer></script>
   <script src="js/sortable.min.js" defer></script>
   <script src="js/stickers.js" defer></script>
+  <script src="js/stickers3d.js" defer></script>
   <script src="js/enhance.js" defer></script>
   <script src="js/app.js" defer></script>
 </body>

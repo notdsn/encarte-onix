@@ -132,17 +132,18 @@
       title: "Ofertas da Semana", dateFrom: from, dateTo: addDaysISO(from, 6), disclaimer: null,
       products: withSample ? sampleProducts() : [],
       stickers: withSample ? [
-        { id: uid("s"), kind: "motoboy", pos: "footer-left", size: "m", caption: "Entregamos em casa!" },
-        { id: uid("s"), kind: "frete-gratis", pos: "footer-right", size: "m", caption: "" },
+        { id: uid("s"), kind: "3d-motoboy", pos: "footer-left", size: "m", caption: "Entregamos em casa!" },
+        { id: uid("s"), kind: "3d-relogio", pos: "tl", size: "s", caption: "Só hoje" },
+        { id: uid("s"), kind: "3d-fogo", pos: "tr", size: "s", caption: "Imperdível" },
       ] : [] };
   }
   function normSticker(s) {
-    const kinds = window.STICKERS || {};
+    const known = window.stickerInfo ? window.stickerInfo(s.kind) : (window.STICKERS || {})[s.kind];
     const posOk = STK_POS.some(([k]) => k === s.pos);
     const sizeOk = STK_SIZES.some(([k]) => k === s.size);
     return {
       id: s.id || uid("s"),
-      kind: kinds[s.kind] ? s.kind : "motoboy",
+      kind: known ? s.kind : "motoboy",
       pos: posOk ? s.pos : "footer-left",
       size: sizeOk ? s.size : "m",
       caption: typeof s.caption === "string" ? s.caption.slice(0, 48) : "",
@@ -500,29 +501,51 @@
   }
 
   // ---------- figurinhas ----------
+  let stkSet = "3d";
+  function brandColors() {
+    const b = state.brand;
+    return { c1: safeColor(b.c1, "#D61E26"), c2: safeColor(b.c2, "#1C3FAA"), c3: safeColor(b.c3, "#FFD600") };
+  }
   function applyStickerColors() {
-    const b = state.brand, c1 = safeColor(b.c1, "#D61E26"), c2 = safeColor(b.c2, "#1C3FAA"), c3 = safeColor(b.c3, "#FFD600");
-    [el.stkGallery, el.stkUsed].forEach((n) => { if (!n) return; n.style.setProperty("--c1", c1); n.style.setProperty("--c2", c2); n.style.setProperty("--c3", c3); });
+    const { c1, c2, c3 } = brandColors();
+    [el.stkGallery, el.stkUsed, el.flyer].forEach((n) => { if (!n) return; n.style.setProperty("--c1", c1); n.style.setProperty("--c2", c2); n.style.setProperty("--c3", c3); });
+    if (window.recolorStickers3D) {
+      window.recolorStickers3D(el.stkGallery, c1);
+      window.recolorStickers3D(el.stkUsed, c1);
+      window.recolorStickers3D(el.flyer, c1);
+    }
   }
   function nextStickerPos() {
     const used = new Set((cur().stickers || []).map((s) => s.pos));
     return (STK_POS.find(([p]) => !used.has(p)) || STK_POS[0])[0];
   }
   function renderStickerGallery() {
-    const S = window.STICKERS || {};
-    el.stkGallery.innerHTML = Object.entries(S).map(([id, meta]) =>
-      `<button type="button" class="stk-pick" data-kind="${id}" role="listitem" aria-label="Adicionar figurinha ${esc(meta[0])}">${window.stickerSVG(id)}<span>${esc(meta[0])}</span></button>`
-    ).join("");
+    const ids = window.stickerIds ? window.stickerIds(stkSet) : Object.keys(window.STICKERS || {});
+    el.stkGallery.innerHTML = ids.map((id) => {
+      const info = window.stickerInfo ? window.stickerInfo(id) : { label: (window.STICKERS[id] || ["Figurinha"])[0] };
+      const mark = window.stickerMarkup ? window.stickerMarkup(id) : window.stickerSVG(id);
+      return `<button type="button" class="stk-pick" data-kind="${id}" role="listitem" aria-label="Adicionar figurinha ${esc(info.label)}">${mark}<span>${esc(info.label)}</span></button>`;
+    }).join("");
+    document.querySelectorAll(".stk-set").forEach((b) => {
+      const on = b.dataset.set === stkSet;
+      b.classList.toggle("is-active", on);
+      b.setAttribute("aria-selected", String(on));
+    });
+    el.stkGallery.setAttribute("aria-labelledby", stkSet === "3d" ? "stk-tab-3d" : "stk-tab-classicas");
+    const { c1 } = brandColors();
+    if (window.recolorStickers3D) window.recolorStickers3D(el.stkGallery, c1);
   }
   function renderStickerUsed() {
     const list = cur().stickers || [];
     el.stkCount.textContent = `(${list.length}/${MAX_STICKERS})`;
     el.stkUsed.innerHTML = list.map((s) => {
-      const label = (window.STICKERS[s.kind] || ["Figurinha"])[0];
+      const info = window.stickerInfo ? window.stickerInfo(s.kind) : { label: (window.STICKERS[s.kind] || ["Figurinha"])[0] };
+      const label = info.label;
+      const mark = window.stickerMarkup ? window.stickerMarkup(s.kind) : window.stickerSVG(s.kind);
       const posOpts = STK_POS.map(([v, l]) => `<option value="${v}" ${v === s.pos ? "selected" : ""}>${esc(l)}</option>`).join("");
       const sizes = STK_SIZES.map(([v, l]) => `<button type="button" data-act="size" data-size="${v}" aria-pressed="${s.size === v}">${l}</button>`).join("");
       return `<article class="stk-item" data-id="${s.id}">
-        <div class="stk-thumb" aria-hidden="true">${window.stickerSVG(s.kind)}</div>
+        <div class="stk-thumb" aria-hidden="true">${mark}</div>
         <div class="stk-fields">
           <strong class="p-title">${esc(label)}</strong>
           <div class="stk-row">
@@ -541,16 +564,22 @@
     const f = cur();
     f.stickers = f.stickers || [];
     if (f.stickers.length >= MAX_STICKERS) return toast("Limite de 8 figurinhas neste encarte.");
-    if (!window.STICKERS[kind]) return;
+    const info = window.stickerInfo ? window.stickerInfo(kind) : (window.STICKERS || {})[kind];
+    if (!info) return;
     const caps = window.STICKER_CAPTIONS || {};
     const cap = caps[kind] || "";
     f.stickers.push({ id: uid("s"), kind, pos: nextStickerPos(), size: "m", caption: (window.stickerCaptionOK && !window.stickerCaptionOK(kind, cap)) ? "" : cap });
     persist(); renderStickerUsed(); renderFlyer();
-    toast(`Figurinha “${window.STICKERS[kind][0]}” adicionada.`);
+    const label = info.label || info[0] || "Figurinha";
+    toast(`Figurinha “${label}” adicionada.`);
     el.stkUsed.lastElementChild?.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
   }
   function initStickers() {
     renderStickerGallery();
+    document.querySelectorAll(".stk-set").forEach((b) => b.addEventListener("click", () => {
+      stkSet = b.dataset.set || "3d";
+      renderStickerGallery();
+    }));
     el.stkGallery.addEventListener("click", (e) => {
       const b = e.target.closest(".stk-pick"); if (b) addSticker(b.dataset.kind);
     });
@@ -606,11 +635,12 @@
     const hideName = b.logo && b.logoOnly;
     const dates = datesLine(f), contacts = contactBits(b);
     const disc = f.disclaimer ?? (PRESETS[b.preset]?.disclaimer || DEFAULT_DISCLAIMER);
-    const stks = (f.stickers || []).filter((s) => window.STICKERS && window.STICKERS[s.kind]);
+    const stks = (f.stickers || []).filter((s) => window.stickerInfo ? window.stickerInfo(s.kind) : window.STICKERS && window.STICKERS[s.kind]);
     const stkNode = (s) => {
       const raw = (s.caption || "").trim();
       const cap = (window.stickerCaptionOK ? window.stickerCaptionOK(s.kind, raw) : !!raw) ? raw : "";
-      return `<div class="fl-stk" data-pos="${esc(s.pos)}" data-size="${esc(s.size || "m")}">${window.stickerSVG(s.kind)}${cap ? `<span class="fl-stk-cap">${esc(cap)}</span>` : ""}</div>`;
+      const mark = window.stickerMarkup ? window.stickerMarkup(s.kind) : window.stickerSVG(s.kind);
+      return `<div class="fl-stk" data-pos="${esc(s.pos)}" data-size="${esc(s.size || "m")}">${mark}${cap ? `<span class="fl-stk-cap">${esc(cap)}</span>` : ""}</div>`;
     };
     const corners = stks.filter((s) => /^(tl|tr|bl|br)$/.test(s.pos)).map(stkNode).join("");
     const footStk = stks.filter((s) => String(s.pos).startsWith("footer")).map(stkNode).join("");
@@ -642,6 +672,7 @@
     applyFlyerAttrs(el.flyer, f, b);
     el.flyer.innerHTML = flyerHTML(f, b);
     scalePreview();
+    if (window.recolorStickers3D) window.recolorStickers3D(el.flyer, safeColor(b.c1, "#D61E26"));
   }
   function scalePreview(frame = el.frame, scaleEl = el.scale, flyer = el.flyer) {
     const size = FORMAT_SIZE[flyer.dataset.format] || FORMAT_SIZE.story;
@@ -780,6 +811,7 @@
     node.style.cssText += `;position:fixed;left:0;top:0;margin:0;transform:none;z-index:9997;width:${size.w}px;height:${size.h}px;`;
     document.body.append(node, cover);
     try {
+      if (window.recolorStickers3D) await window.recolorStickers3D(node, safeColor(state.brand.c1, "#D61E26"));
       await document.fonts.ready; await waitImgs(node);
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       const blob = await window.htmlToImage.toBlob(node, { pixelRatio: 1, canvasWidth: size.w, canvasHeight: size.h, width: size.w, height: size.h, backgroundColor: getComputedStyle(node).backgroundColor || "#fff" });
@@ -878,7 +910,7 @@
     window.addEventListener("resize", () => scalePreview());
     if (!state.onboarded) startOnboarding();
     if ("serviceWorker" in navigator && window.isSecureContext) navigator.serviceWorker.register("sw.js").catch(() => {});
-    window.__vitrine = { get state() { return state; }, renderPngBlob, renderFlyer, renderStickerUI, openEnhance, openCrop };
+    window.__vitrine = { get state() { return state; }, renderPngBlob, renderFlyer, renderStickerUI, renderStickerGallery, openEnhance, openCrop, setStickerSet(s) { stkSet = s; renderStickerGallery(); } };
   }
   boot();
 })();

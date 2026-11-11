@@ -13,7 +13,7 @@ PWA instalável, funciona offline depois da primeira visita. Tudo fica salvo só
 3. Escolha um modelo (Clássico, Gradiente, Premium, Neon Sale e outros).
 4. Preencha o título, o período e os dados da loja (nome, cores, logo, WhatsApp…).
 5. Adicione até 12 produtos com nome, detalhes, preços de/por, foto e selo.
-6. Em **Figurinhas**, coloque artes (motoboy, frete grátis, só hoje…) que acompanham as cores da loja.
+6. Em **Figurinhas**, escolha artes **3D** ou **Clássicas** (motoboy, frete grátis, só hoje…) que acompanham as cores da loja.
 7. Em cada foto, use **Deixar bonita com IA** para recortar o fundo e melhorar a imagem no próprio aparelho (na primeira vez baixa um modelo de ~15 MB; depois funciona offline).
 8. Toque em **Baixar PNG**, **Compartilhar** ou **Imprimir / PDF**.
 

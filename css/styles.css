@@ -590,6 +590,21 @@ body { padding-bottom: calc(var(--tab-h) + 16px); font-family: Jakarta, Nunito, 
 .card-off { border-radius: 14px; }
 
 /* ===== Figurinhas ===== */
+.stk-sets {
+  display: flex; gap: 6px; margin-top: 12px;
+  padding: 4px; border-radius: 14px;
+  background: var(--field, #f3f5fb);
+  border: 1.5px solid var(--line);
+}
+.stk-set {
+  flex: 1; min-height: 38px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--muted); font-weight: 800; font-size: 13px;
+  cursor: pointer;
+}
+.stk-set.is-active, .stk-set[aria-selected="true"] {
+  background: var(--card, #fff); color: var(--ink);
+  box-shadow: 0 2px 8px rgba(20, 28, 60, .10);
+}
 .stk-gallery {
   --c1: #D61E26; --c2: #1C3FAA; --c3: #FFD600;
   display: grid;
@@ -607,7 +622,7 @@ body { padding-bottom: calc(var(--tab-h) + 16px); font-family: Jakarta, Nunito, 
   cursor: pointer; color: var(--ink); min-width: 0; min-height: 96px;
   transition: transform .15s, border-color .18s, box-shadow .18s;
 }
-.stk-pick .stk { width: 64px; height: 64px; display: block; }
+.stk-pick .stk { width: 64px; height: 64px; display: block; object-fit: contain; }
 .stk-pick span { font-size: 10px; font-weight: 700; text-align: center; line-height: 1.2; color: var(--muted); }
 .stk-pick:hover, .stk-pick:focus-visible { border-color: var(--app, #2547d0); box-shadow: 0 0 0 3px rgba(37,71,208,.14); }
 .stk-pick:active { transform: scale(.96); }
@@ -619,7 +634,7 @@ body { padding-bottom: calc(var(--tab-h) + 16px); font-family: Jakarta, Nunito, 
   background: var(--card);
 }
 .stk-item .stk-thumb { width: 68px; height: 68px; }
-.stk-item .stk { width: 68px; height: 68px; display: block; }
+.stk-item .stk { width: 68px; height: 68px; display: block; object-fit: contain; }
 .stk-item .stk-fields { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .stk-item .field { margin: 0; }
 .stk-item .stk-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -642,7 +657,7 @@ body { padding-bottom: calc(var(--tab-h) + 16px); font-family: Jakarta, Nunito, 
 .fl-body { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .fl-body .fl-grid { flex: 1; }
 .fl-stk { display: flex; align-items: center; gap: 10px; pointer-events: none; max-width: 46%; }
-.fl-stk .stk { width: var(--stk, var(--stk-m)); height: var(--stk, var(--stk-m)); flex: none; display: block; filter: drop-shadow(0 8px 16px rgba(0,0,0,.22)); }
+.fl-stk .stk { width: var(--stk, var(--stk-m)); height: var(--stk, var(--stk-m)); flex: none; display: block; object-fit: contain; filter: drop-shadow(0 8px 16px rgba(0,0,0,.22)); }
 .fl-stk[data-size="s"] { --stk: var(--stk-s); }
 .fl-stk[data-size="m"] { --stk: var(--stk-m); }
 .fl-stk[data-size="l"] { --stk: var(--stk-l); }
