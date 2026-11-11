@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#D61E26">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Gerador de encartes de promoção das Drogarias Ônix. Monte ofertas, exporte em PNG ou imprima em A4.">
+  <title>Encartes Ônix — Gerador de promoções</title>
+  <link rel="icon" type="image/png" href="icons/favicon.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="fonts/fonts.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-brand">
+      <img src="icons/mark.png" alt="" width="32" height="32">
+      <div>
+        <strong>Drogarias Ônix</strong>
+        <span>Gerador de encartes</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="preview-col" aria-label="Prévia do encarte">
+      <div class="preview-toolbar">
+        <h2>Prévia</h2>
+        <button type="button" class="btn-text" id="btn-fullscreen" aria-label="Ver encarte em tela cheia">Ampliar</button>
+      </div>
+      <div class="preview-frame" id="preview-frame">
+        <div class="flyer-scale" id="flyer-scale">
+          <article class="flyer" id="flyer" data-theme="classico" data-format="story" data-cols="2" data-density="comfortable" data-count="6"></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="editor-col" aria-label="Editor do encarte">
+      <div class="panel">
+        <h2>Formato</h2>
+        <div class="seg" role="radiogroup" aria-label="Formato do encarte" id="format-group">
+          <label class="seg-item"><input type="radio" name="format" value="story" checked> Story / Status<br><small>9:16 · 1080×1920</small></label>
+          <label class="seg-item"><input type="radio" name="format" value="feed"> Feed<br><small>1:1 · 1080×1080</small></label>
+          <label class="seg-item"><input type="radio" name="format" value="a4"> A4 impressão<br><small>Retrato · PDF</small></label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Tema</h2>
+        <div class="theme-grid" role="radiogroup" aria-label="Tema visual" id="theme-group">
+          <label class="theme-swatch t-classico"><input type="radio" name="theme" value="classico" checked> Clássico Ônix</label>
+          <label class="theme-swatch t-relampago"><input type="radio" name="theme" value="relampago"> Relâmpago</label>
+          <label class="theme-swatch t-clean"><input type="radio" name="theme" value="clean"> Farmácia clean</label>
+          <label class="theme-swatch t-noite"><input type="radio" name="theme" value="noite"> Noite Ônix</label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Cabeçalho do encarte</h2>
+        <label class="field">Título
+          <input type="text" id="fld-title" maxlength="60" placeholder="Ofertas da Semana">
+        </label>
+        <div class="row-2">
+          <label class="field">Válidas de
+            <input type="date" id="fld-from">
+          </label>
+          <label class="field">até
+            <input type="date" id="fld-to">
+          </label>
+        </div>
+        <label class="field">Endereço
+          <input type="text" id="fld-address" maxlength="140" placeholder="Rua, número — Bairro, Cidade">
+        </label>
+        <div class="row-2">
+          <label class="field">WhatsApp
+            <input type="tel" id="fld-whatsapp" maxlength="24" placeholder="(00) 00000-0000" inputmode="tel">
+          </label>
+          <label class="field">Instagram
+            <input type="text" id="fld-instagram" maxlength="40" placeholder="@sua_loja" autocapitalize="off">
+          </label>
+        </div>
+        <div class="logo-row">
+          <div class="logo-preview" id="logo-preview">
+            <img src="icons/mark.png" alt="Marca padrão (cruz branca)" id="logo-img">
+          </div>
+          <div class="logo-actions">
+            <label class="btn-secondary file-btn">Enviar logo
+              <input type="file" id="fld-logo" accept="image/*">
+            </label>
+            <button type="button" class="btn-text" id="btn-logo-clear" hidden>Remover logo</button>
+            <label class="chk" id="logo-only-wrap" hidden>
+              <input type="checkbox" id="fld-logo-only"> Usar só o logo (ocultar o nome)
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Produtos <span class="muted" id="product-count">(0/12)</span></h2>
+        </div>
+        <div id="product-list" class="product-list"></div>
+        <button type="button" class="btn-secondary btn-block" id="btn-add">+ Adicionar produto</button>
+        <p class="hint">Toque na foto para enviar da galeria ou da câmera. Máximo de 12 produtos.</p>
+      </div>
+
+      <div class="panel">
+        <h2>Aviso legal (rodapé)</h2>
+        <label class="field">
+          <textarea id="fld-disclaimer" rows="4" maxlength="500"></textarea>
+        </label>
+      </div>
+
+      <div class="panel">
+        <h2>Dados e backup</h2>
+        <div class="btn-row">
+          <button type="button" class="btn-secondary" id="btn-export-json">Exportar JSON</button>
+          <label class="btn-secondary file-btn">Importar JSON
+            <input type="file" id="fld-import-json" accept="application/json,.json">
+          </label>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn-text" id="btn-sample">Carregar exemplo</button>
+          <button type="button" class="btn-text danger" id="btn-clear">Limpar tudo</button>
+        </div>
+        <p class="hint">O encarte fica salvo neste celular. O backup JSON leva textos, preços e fotos compactadas.</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="actionbar" role="toolbar" aria-label="Ações do encarte">
+    <button type="button" class="btn-primary" id="btn-png">Baixar PNG</button>
+    <button type="button" class="btn-secondary" id="btn-share">Compartilhar</button>
+    <button type="button" class="btn-secondary" id="btn-print">Imprimir / PDF</button>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <div class="fs-overlay" id="fs-overlay" hidden>
+    <button type="button" class="fs-close" id="btn-fs-close">Fechar</button>
+    <div class="fs-inner" id="fs-inner"></div>
+  </div>
+
+  <script src="js/html-to-image.min.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
