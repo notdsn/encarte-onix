@@ -999,3 +999,167 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .tab .ic, .biz-item, .chip, .btn-primary, .btn-secondary, .file-btn { transition: none !important; }
 }
+
+
+/* ===== v2.2.4 — Feed 1:1: cabeçalho/rodapé menores, nome e preço sempre visíveis ===== */
+
+/* O texto do card não pode ser esmagado pelo min-height da foto */
+.card-name, .card-det, .card-prices { flex: 0 0 auto; min-width: 0; }
+.card-photo {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Chrome compacto no quadrado 1080×1080 */
+.flyer[data-format="feed"] {
+  --pad: 28px;
+  --gap: 14px;
+  --head-pad: 16px 0 0;
+  --title-size: 48px;
+  --dates-size: 18px;
+  --brand-size: 28px;
+  --tag-size: 14px;
+  --logo: 56px;
+  --contact-size: 16px;
+  --disc-size: 13px;
+  --stk-s: 56px;
+  --stk-m: 80px;
+  --stk-l: 108px;
+}
+.flyer[data-format="feed"] .fl-band { margin: 8px 0 0; padding: 8px var(--pad) 10px; }
+.flyer[data-format="feed"] .fl-dates { margin-top: 6px; padding: 3px 12px; }
+.flyer[data-format="feed"] .fl-foot { padding: 8px var(--pad) 10px; }
+.flyer[data-format="feed"] .fl-contact { margin-bottom: 4px; gap: 4px 14px; }
+.flyer[data-format="feed"] .fl-stk-foot { margin-bottom: 6px; }
+.flyer[data-format="feed"] .card { padding: 12px 12px 12px; }
+.flyer[data-format="feed"] .card-photo { margin-bottom: 8px; min-height: 72px; }
+.flyer[data-format="feed"] .fl-brand { gap: 10px; }
+
+/* 1 produto: pode respirar um pouco mais */
+.flyer[data-format="feed"][data-density="hero"] {
+  --title-size: 56px;
+  --logo: 64px;
+  --head-pad: 20px 0 0;
+  --pad: 32px;
+  --por-size: 72px;
+  --name-size: 36px;
+  --det-size: 20px;
+  --de-size: 20px;
+  --photo-min: 280px;
+}
+.flyer[data-format="feed"][data-density="hero"] .card { padding: 18px 18px 20px; }
+.flyer[data-format="feed"][data-density="hero"] .card-photo { min-height: 160px; margin-bottom: 12px; }
+
+/* 2–4 produtos (grade 2×2 ou 2 colunas) */
+.flyer[data-format="feed"][data-density="comfortable"] {
+  --pad: 22px;
+  --gap: 12px;
+  --head-pad: 12px 0 0;
+  --title-size: 42px;
+  --dates-size: 16px;
+  --brand-size: 24px;
+  --logo: 48px;
+  --tag-size: 13px;
+  --name-size: 22px;
+  --det-size: 14px;
+  --de-size: 14px;
+  --por-size: 34px;
+  --por-label: 13px;
+  --off-size: 16px;
+  --badge-size: 13px;
+  --contact-size: 15px;
+  --disc-size: 12px;
+  --photo-min: 96px;
+}
+.flyer[data-format="feed"][data-density="comfortable"] .card { padding: 10px 10px 10px; }
+.flyer[data-format="feed"][data-density="comfortable"] .card-photo { min-height: 72px; }
+
+/* 5–8 produtos (até 3 colunas, 3 linhas) */
+.flyer[data-format="feed"][data-density="dense"] {
+  --pad: 18px;
+  --gap: 10px;
+  --head-pad: 10px 0 0;
+  --title-size: 36px;
+  --dates-size: 15px;
+  --brand-size: 22px;
+  --logo: 40px;
+  --tag-size: 12px;
+  --name-size: 16px;
+  --det-size: 12px;
+  --de-size: 12px;
+  --por-size: 24px;
+  --por-label: 11px;
+  --off-size: 13px;
+  --badge-size: 11px;
+  --contact-size: 13px;
+  --disc-size: 11px;
+  --photo-min: 64px;
+}
+.flyer[data-format="feed"][data-density="dense"] .card { padding: 8px 8px 8px; }
+.flyer[data-format="feed"][data-density="dense"] .card-photo { min-height: 52px; margin-bottom: 6px; }
+.flyer[data-format="feed"][data-density="dense"] .card-badge,
+.flyer[data-format="feed"][data-density="dense"] .card-off { padding: 5px 8px; }
+
+/* 9–12 produtos */
+.flyer[data-format="feed"][data-density="compact"] {
+  --pad: 14px;
+  --gap: 8px;
+  --head-pad: 8px 0 0;
+  --title-size: 32px;
+  --dates-size: 13px;
+  --brand-size: 18px;
+  --logo: 36px;
+  --tag-size: 11px;
+  --name-size: 14px;
+  --det-size: 11px;
+  --de-size: 11px;
+  --por-size: 20px;
+  --por-label: 10px;
+  --off-size: 11px;
+  --badge-size: 10px;
+  --contact-size: 12px;
+  --disc-size: 10px;
+  --photo-min: 48px;
+}
+.flyer[data-format="feed"][data-density="compact"] .card { padding: 6px 6px 7px; }
+.flyer[data-format="feed"][data-density="compact"] .card-photo { min-height: 40px; margin-bottom: 4px; }
+
+/* Figurinhas no Feed: reserva menos altura para o miolo sobrar para os cards */
+.flyer[data-format="feed"][data-stk-top="s"] { --stk-clear-top: calc(var(--stk-s) * .45 + 6px); }
+.flyer[data-format="feed"][data-stk-top="m"] { --stk-clear-top: calc(var(--stk-m) * .45 + 8px); }
+.flyer[data-format="feed"][data-stk-top="l"] { --stk-clear-top: calc(var(--stk-l) * .45 + 8px); }
+.flyer[data-format="feed"][data-stk-bottom="s"] { --stk-clear-bottom: calc(var(--stk-s) * .4 + 6px); }
+.flyer[data-format="feed"][data-stk-bottom="m"] { --stk-clear-bottom: calc(var(--stk-m) * .4 + 6px); }
+.flyer[data-format="feed"][data-stk-bottom="l"] { --stk-clear-bottom: calc(var(--stk-l) * .4 + 8px); }
+
+/* Temas com margem extra no banner/rodapé: no Feed isso come o card */
+.flyer[data-format="feed"][data-theme="gradiente"] .fl-band,
+.flyer[data-format="feed"][data-theme="relampago"] .fl-band,
+.flyer[data-format="feed"][data-theme="saude"] .fl-band,
+.flyer[data-format="feed"][data-theme="beleza"] .fl-band,
+.flyer[data-format="feed"][data-theme="natal"] .fl-band,
+.flyer[data-format="feed"][data-theme="classico"] .fl-band {
+  margin: 8px var(--pad) 0;
+}
+.flyer[data-format="feed"][data-theme="classico"] .fl-grid { padding-top: calc(var(--pad) - 4px); }
+.flyer[data-format="feed"][data-theme="classico"][data-stk-top="s"] .fl-grid,
+.flyer[data-format="feed"][data-theme="classico"][data-stk-top="m"] .fl-grid,
+.flyer[data-format="feed"][data-theme="classico"][data-stk-top="l"] .fl-grid {
+  padding-top: calc(var(--pad) + var(--stk-clear-top, 0px) - 4px);
+}
+.flyer[data-format="feed"][data-theme="gradiente"] .fl-foot,
+.flyer[data-format="feed"][data-theme="relampago"] .fl-foot {
+  margin: 0 var(--pad) 10px;
+}
+.flyer[data-format="feed"][data-theme="premium"] .fl-band {
+  margin: 8px var(--pad) 0;
+  padding: 8px 0 2px;
+}
+.flyer[data-format="feed"][data-theme="premium"] .fl-title { font-size: calc(var(--title-size) * 1.04); }
+.flyer[data-format="feed"][data-theme="neon"] .fl-title { font-size: var(--title-size); }
+
+/* Story e A4: a foto pode encolher se o card apertar, o texto não */
+.flyer[data-format="story"] .card-photo,
+.flyer[data-format="a4"] .card-photo { min-height: 72px; }
+.flyer[data-format="story"][data-density="hero"] .card-photo,
+.flyer[data-format="a4"][data-density="hero"] .card-photo { min-height: 180px; }
