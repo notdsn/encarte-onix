@@ -348,11 +348,12 @@ html, body { overflow-x: hidden; }
 .onb-dots span { width: 8px; height: 8px; border-radius: 50%; background: #d5dcec; }
 .onb-dots span.on { background: var(--blue); width: 22px; border-radius: 6px; }
 .onb-nav { justify-content: space-between; }
+.onb-error { color: #c0262d; font-weight: 700; margin: 8px 0 0; text-align: left; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
 /* ========== FLYER ========== */
 .flyer {
-  --c1: #D61E26; --c2: #1C3FAA; --c3: #FFD600;
+  --c1: #2563EB; --c2: #0F172A; --c3: #FACC15;
   --fl-bg: #f3f4f8; --fl-head-bg: var(--c1); --fl-head-text: #fff;
   --fl-band: var(--c2); --fl-band-text: #fff; --fl-title: #fff;
   --fl-card: #fff; --fl-name: #102054; --fl-det: #5b6478; --fl-de: #8a93a6;
@@ -606,7 +607,7 @@ body { padding-bottom: calc(var(--tab-h) + 16px); font-family: Jakarta, Nunito, 
   box-shadow: 0 2px 8px rgba(20, 28, 60, .10);
 }
 .stk-gallery {
-  --c1: #D61E26; --c2: #1C3FAA; --c3: #FFD600;
+  --c1: #2563EB; --c2: #0F172A; --c3: #FACC15;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
@@ -628,7 +629,7 @@ body { padding-bottom: calc(var(--tab-h) + 16px); font-family: Jakarta, Nunito, 
 .stk-pick:active { transform: scale(.96); }
 .stk-used { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
 .stk-item {
-  --c1: #D61E26; --c2: #1C3FAA; --c3: #FFD600;
+  --c1: #2563EB; --c2: #0F172A; --c3: #FACC15;
   border: 1.5px solid var(--line); border-radius: 16px; padding: 10px;
   display: grid; grid-template-columns: 68px 1fr auto; gap: 10px; align-items: start;
   background: var(--card);
@@ -828,3 +829,12 @@ body { padding-bottom: calc(var(--tab-h) + 16px); font-family: Jakarta, Nunito, 
 .stk-pick.is-sug { position: relative; }
 .stk-pick.is-sug::after { content: "★"; position: absolute; top: 4px; right: 6px; font-size: 12px; color: #f5a400; }
 #btn-logo-clear[hidden], #logo-only-wrap[hidden] { display: none !important; }
+#onb-next { margin-left: auto; }
+#onb-skip[hidden], #onb-back[hidden], .onb-error[hidden] { display: none !important; }
+/* 2.2.2: cartões de modelo sempre contidos (selo "novo" no canto, sem empurrar o texto) */
+.theme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.theme-swatch { box-sizing: border-box; min-width: 0; max-width: 100%; overflow: hidden; justify-content: flex-start; align-items: center; gap: 10px; padding: 8px 10px 8px 8px; min-height: 64px; }
+.theme-swatch .sw { flex: 0 0 36px; width: 36px; height: 48px; margin: 0; }
+.theme-swatch .th-label { flex: 1 1 auto; min-width: 0; line-height: 1.2; overflow-wrap: break-word; white-space: normal; }
+.theme-swatch:has(.new) .th-label { padding-top: 10px; }
+.theme-swatch .new { position: absolute; top: 5px; right: 6px; margin: 0; padding: 2px 6px; font-size: 9px; line-height: 1.2; letter-spacing: .02em; pointer-events: none; }

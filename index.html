@@ -182,7 +182,7 @@
 
       <div class="panel about" id="sobre">
         <h2>Sobre</h2>
-        <p class="hint"><strong>Vitrine de Ofertas</strong> v2.2.1 · Desenvolvido por <strong>Nextwave Studio Brasil</strong>.<br>Para mercados, açougues, hortifrútis, padarias, farmácias, lojas de roupa, pet shops, material de construção e todo tipo de comércio. Grátis, sem cadastro e sem anúncios. Seus dados ficam só no seu aparelho. A função “Deixar bonita com IA” recorta e melhora a foto no próprio aparelho (modelos IS-Net/DIS e U²-Net, licença Apache-2.0).<br>A marca “Drogarias Ônix” é só um exemplo pronto; troque pelo nome e cores da sua loja em “Sua loja”.</p>
+        <p class="hint"><strong>Vitrine de Ofertas</strong> v2.2.2 · Desenvolvido por <strong>Nextwave Studio Brasil</strong>.<br>Para mercados, açougues, hortifrútis, padarias, farmácias, lojas de roupa, pet shops, material de construção e todo tipo de comércio. Grátis, sem cadastro e sem anúncios. Seus dados ficam só no seu aparelho. A função “Deixar bonita com IA” recorta e melhora a foto no próprio aparelho (modelos IS-Net/DIS e U²-Net, licença Apache-2.0).<br>Os dados da sua loja (nome, cores, logo e contatos) ficam em “Sua loja”.</p>
       </div>
     </section>
   </main>
@@ -286,8 +286,9 @@
       <h2>Qual é o seu negócio?</h2>
       <div class="biz-grid" id="onb-seg" role="radiogroup" aria-label="Tipo de negócio"></div>
       <label class="field">Nome da loja
-        <input type="text" id="onb-store" maxlength="40" placeholder="ex.: Loja do Bairro">
+        <input type="text" id="onb-store" maxlength="40" placeholder="Nome da sua loja" autocomplete="organization">
       </label>
+      <p class="onb-error" id="onb-error" role="alert" hidden></p>
       <p class="hint">Os exemplos, cores e sugestões se ajustam ao seu tipo de negócio. Dá para trocar tudo depois, em “Sua loja”.</p>
     </div>
     <div class="onb" data-step="3" hidden>
@@ -304,6 +305,7 @@
     <div class="onb-dots" aria-hidden="true"><span></span><span></span><span></span></div>
     <div class="btn-row onb-nav">
       <button type="button" class="btn-text" id="onb-skip">Pular</button>
+      <button type="button" class="btn-text" id="onb-back" hidden>Voltar</button>
       <button type="button" class="btn-primary" id="onb-next">Continuar</button>
     </div>
   </dialog>

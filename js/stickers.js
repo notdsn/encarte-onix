@@ -100,9 +100,9 @@
       <path d="M53 42h14M60 35v14" stroke="currentColor" class="bs" stroke-width="5" stroke-linecap="round"/>`],
   };
   const STYLE = `<style>
-    .a{fill:var(--c1,#D61E26)} .b{fill:var(--c2,#1C3FAA)} .c{fill:var(--c3,#FFD600)}
+    .a{fill:var(--c1,#2563EB)} .b{fill:var(--c2,#0F172A)} .c{fill:var(--c3,#FACC15)}
     .k{fill:#1b1f2e} .w{fill:#fff} .s{fill:#f0c4a0} .h{fill:#3a2a22} .g{fill:#6b7280}
-    .as{stroke:var(--c1,#D61E26);fill:none} .bs{stroke:var(--c2,#1C3FAA);fill:none}
+    .as{stroke:var(--c1,#2563EB);fill:none} .bs{stroke:var(--c2,#0F172A);fill:none}
     .t{font-family:Oswald,Nunito,Arial,sans-serif;font-weight:700}
   </style>`;
   window.STICKERS = S;

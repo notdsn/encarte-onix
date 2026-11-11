@@ -150,7 +150,7 @@
     return data;
   }
   async function recolor(id, c1) {
-    const color = String(c1 || "#D61E26").toLowerCase();
+    const color = String(c1 || "#2563EB").toLowerCase();
     const key = id + "|" + color;
     if (cache.has(key)) return cache.get(key);
     if (pending.has(key)) return pending.get(key);

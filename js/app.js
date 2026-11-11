@@ -6,9 +6,14 @@
   const LS_KEY = "vitrine-ofertas-v2";
   const MAX_PRODUCTS = 12;
   const SEGS = window.SEGMENTS, SEG_ORDER = window.SEGMENT_ORDER;
-  const DEFAULT_SEGMENT = "farmacia";
-  // Modelos de marca: um pronto de exemplo (Drogarias Ônix) + um genérico para cada tipo de negócio.
-  const PRESETS = { onix: { label: "Drogarias Ônix (exemplo de farmácia)", name: "Drogarias Ônix", slogan: "Cuidar de você é com a gente", c1: "#D61E26", c2: "#1C3FAA", c3: "#FFD600", mark: "cruz", segment: "farmacia" } };
+  const DEFAULT_SEGMENT = "farmacia"; // só para dados antigos (antes dos tipos de negócio)
+  const NEW_USER_SEGMENT = "outro";
+  // Cores neutras usadas quando a loja ainda não tem marca.
+  const NEUTRAL = { c1: "#2563EB", c2: "#0F172A", c3: "#FACC15" };
+  // Loja em branco: quem instala o app começa sem nenhuma loja pré-preenchida.
+  const BLANK_BRAND = { preset: "none", name: "", slogan: "", c1: NEUTRAL.c1, c2: NEUTRAL.c2, c3: NEUTRAL.c3, mark: "icone", logo: "", logoOnly: false, address: "", whatsapp: "", instagram: "" };
+  // Modelos de marca: um genérico para cada tipo de negócio.
+  const PRESETS = {};
   SEG_ORDER.forEach((k) => { PRESETS[k] = { label: SEGS[k].label + " (genérico)", ...SEGS[k].brand, segment: k }; });
 
   const THEMES = [
@@ -107,8 +112,9 @@
 
   // ---------- model ----------
   function brandFromPreset(key, keep) {
-    const p = PRESETS[key] || PRESETS.onix;
-    return { preset: PRESETS[key] ? key : "onix", name: p.name, slogan: p.slogan, c1: p.c1, c2: p.c2, c3: p.c3, mark: p.mark, logo: "", logoOnly: false,
+    const p = PRESETS[key];
+    if (!p) return { ...BLANK_BRAND, address: keep?.address || "", whatsapp: keep?.whatsapp || "", instagram: keep?.instagram || "" };
+    return { preset: key, name: p.name, slogan: p.slogan, c1: p.c1, c2: p.c2, c3: p.c3, mark: p.mark, logo: "", logoOnly: false,
       address: keep?.address || "", whatsapp: keep?.whatsapp || "", instagram: keep?.instagram || "" };
   }
   function sampleProducts(segId) {
@@ -149,11 +155,13 @@
       newPrice: p.newPrice == null || p.newPrice === "" ? null : Number(p.newPrice), photo: p.photo || "", photoSrc: p.photoSrc || "", badge: p.badge || "" };
   }
   function normalize(s) {
-    const st = s && typeof s === "object" ? s : {};
+    const fresh = !(s && typeof s === "object");
+    const st = fresh ? {} : s;
     st.version = 3;
-    // migração: quem já usava o app era de farmácia (ou escolheu a marca de mercado/beleza)
-    if (!SEGS[st.segment]) st.segment = st.brand && SEGS[st.brand.preset] ? st.brand.preset : DEFAULT_SEGMENT;
-    st.brand = { ...brandFromPreset("onix"), ...(st.brand || {}) };
+    // usuário novo: tipo neutro até escolher no primeiro acesso.
+    // migração: quem já usava o app antes dos tipos de negócio era de farmácia (ou escolheu a marca de mercado/beleza)
+    if (!SEGS[st.segment]) st.segment = fresh ? NEW_USER_SEGMENT : st.brand && SEGS[st.brand.preset] ? st.brand.preset : DEFAULT_SEGMENT;
+    st.brand = { ...BLANK_BRAND, ...(st.brand || {}) };
     if (!Array.isArray(st.flyers) || !st.flyers.length) st.flyers = [newFlyer("Meu primeiro encarte", true, st.segment)];
     st.flyers = st.flyers.map((f) => ({ ...newFlyer(null, false, st.segment), ...f, products: (f.products || []).slice(0, MAX_PRODUCTS).map(normProduct), stickers: (f.stickers || []).slice(0, MAX_STICKERS).map(normSticker) }));
     if (!st.flyers.some((f) => f.id === st.currentId)) st.currentId = st.flyers[0].id;
@@ -165,10 +173,11 @@
       const raw = localStorage.getItem(LEGACY_KEY);
       if (!raw) return null;
       const o = JSON.parse(raw);
-      const brand = brandFromPreset("onix", o);
-      brand.segment = undefined;
+      // A versão 1 tinha a marca fixa da loja de quem a usava; mantém essa marca para não perder os dados.
+      const brand = { ...BLANK_BRAND, preset: "custom", name: o.name || "Drogarias Ônix", slogan: o.slogan || "Cuidar de você é com a gente", c1: "#D61E26", c2: "#1C3FAA", c3: "#FFD600", mark: "cruz",
+        address: o.address || "", whatsapp: o.whatsapp || "", instagram: o.instagram || "" };
       if (o.logo) { brand.logo = o.logo; brand.logoOnly = !!o.logoOnly; }
-      const f = newFlyer("Encarte Ônix");
+      const f = newFlyer("Meu encarte", false, "farmacia");
       Object.assign(f, { theme: ["classico", "relampago", "clean", "noite"].includes(o.theme) ? o.theme : "classico", format: o.format || "story",
         title: o.title || f.title, dateFrom: o.dateFrom || f.dateFrom, dateTo: o.dateTo || f.dateTo, disclaimer: o.disclaimer || null, products: o.products || [] });
       return { brand, segment: "farmacia", flyers: [f], currentId: f.id, onboarded: true };
@@ -322,7 +331,7 @@
     if (weak === "low-memory") setEnhProgress(0.02, "Este aparelho é mais simples; pode demorar um pouco…");
     enh.busy = true;
     try {
-      const tint = safeColor(state.brand.c1, "#D61E26");
+      const tint = safeColor(state.brand.c1, NEUTRAL.c1);
       const out = await API.enhance(enh.before, {
         background: enh.opts.background, tint,
         onProgress: setEnhProgress,
@@ -347,7 +356,7 @@
     try {
       const out = await API.enhance(enh.before, {
         background: $("enh-tint").checked ? "tint" : "white",
-        tint: safeColor(state.brand.c1, "#D61E26"),
+        tint: safeColor(state.brand.c1, NEUTRAL.c1),
         onProgress: setEnhProgress, reuse: true,
       });
       enh.after = out.dataURL;
@@ -399,7 +408,7 @@
   function renderThemes() {
     const f = cur();
     $("theme-group").innerHTML = THEMES.map((t) => `<label class="theme-swatch"><input type="radio" name="theme" value="${t.id}" ${t.id === f.theme ? "checked" : ""}>
-      <span class="sw" style="--c1:${state.brand.c1};--c2:${state.brand.c2};--c3:${state.brand.c3}"><i style="background:${t.sw[0]}"></i><i style="background:${t.sw[1]}"></i><i style="background:${t.sw[2]}"></i></span>${esc(t.label)}${t.novo ? '<em class="new">novo</em>' : ""}</label>`).join("");
+      <span class="sw" style="--c1:${state.brand.c1};--c2:${state.brand.c2};--c3:${state.brand.c3}"><i style="background:${t.sw[0]}"></i><i style="background:${t.sw[1]}"></i><i style="background:${t.sw[2]}"></i></span><span class="th-label">${esc(t.label)}</span>${t.novo ? '<em class="new">novo</em>' : ""}</label>`).join("");
     document.querySelectorAll('input[name="theme"]').forEach((i) => i.addEventListener("change", () => { if (i.checked) { cur().theme = i.value; persist(); renderFlyer(); } }));
   }
   function fillForm() {
@@ -408,8 +417,8 @@
     el.disclaimer.value = f.disclaimer ?? SEG().disclaimer;
     fillSelect(el.preset, b.preset);
     el.store.value = b.name || ""; el.slogan.value = b.slogan || "";
-    el.c1.value = safeColor(b.c1, "#D61E26"); el.c2.value = safeColor(b.c2, "#1C3FAA"); el.c3.value = safeColor(b.c3, "#FFD600");
-    el.mark.value = b.mark || "cruz"; el.logoOnly.checked = !!b.logoOnly;
+    el.c1.value = safeColor(b.c1, NEUTRAL.c1); el.c2.value = safeColor(b.c2, NEUTRAL.c2); el.c3.value = safeColor(b.c3, NEUTRAL.c3);
+    el.mark.value = b.mark || "icone"; el.logoOnly.checked = !!b.logoOnly;
     el.address.value = b.address || ""; el.whatsapp.value = b.whatsapp || ""; el.instagram.value = b.instagram || "";
     document.querySelectorAll('input[name="format"]').forEach((i) => (i.checked = i.value === f.format));
     el.curName.textContent = f.name;
@@ -535,7 +544,7 @@
   let stkSet = "3d";
   function brandColors() {
     const b = state.brand;
-    return { c1: safeColor(b.c1, "#D61E26"), c2: safeColor(b.c2, "#1C3FAA"), c3: safeColor(b.c3, "#FFD600") };
+    return { c1: safeColor(b.c1, NEUTRAL.c1), c2: safeColor(b.c2, NEUTRAL.c2), c3: safeColor(b.c3, NEUTRAL.c3) };
   }
   function applyStickerColors() {
     const { c1, c2, c3 } = brandColors();
@@ -677,7 +686,7 @@
     };
     const corners = stks.filter((s) => /^(tl|tr|bl|br)$/.test(s.pos)).map(stkNode).join("");
     const footStk = stks.filter((s) => String(s.pos).startsWith("footer")).map(stkNode).join("");
-    return `<header class="fl-head"><div class="fl-brand">${logoHTML(b)}${hideName ? "" : `<div><div class="fl-name">${esc(b.name || "Sua loja")}</div>${b.slogan ? `<div class="fl-tag">${esc(b.slogan)}</div>` : ""}</div>`}</div>
+    return `<header class="fl-head"><div class="fl-brand">${logoHTML(b)}${hideName ? "" : `<div><div class="fl-name">${esc(b.name || "Nome da sua loja")}</div>${b.slogan ? `<div class="fl-tag">${esc(b.slogan)}</div>` : ""}</div>`}</div>
       <div class="fl-band"><h1 class="fl-title">${esc(f.title || "Ofertas da Semana")}</h1>${dates ? `<p class="fl-dates">${esc(dates)}</p>` : ""}</div></header>
       <div class="fl-body"><section class="fl-grid">${cards}</section>${corners}</div>
       <footer class="fl-foot">${footStk ? `<div class="fl-stk-foot">${footStk}</div>` : ""}${contacts.length ? `<div class="fl-contact">${contacts.join("")}</div>` : ""}${disc ? `<p class="fl-disc">${esc(disc)}</p>` : ""}</footer>`;
@@ -698,14 +707,14 @@
       stkBl: bot.some((s) => s.pos === "bl") ? "1" : "", stkBr: bot.some((s) => s.pos === "br") ? "1" : "",
     });
     node.style.width = size.w + "px"; node.style.height = size.h + "px";
-    node.style.setProperty("--c1", safeColor(b.c1, "#D61E26")); node.style.setProperty("--c2", safeColor(b.c2, "#1C3FAA")); node.style.setProperty("--c3", safeColor(b.c3, "#FFD600"));
+    node.style.setProperty("--c1", safeColor(b.c1, NEUTRAL.c1)); node.style.setProperty("--c2", safeColor(b.c2, NEUTRAL.c2)); node.style.setProperty("--c3", safeColor(b.c3, NEUTRAL.c3));
   }
   function renderFlyer() {
     const f = cur(), b = state.brand;
     applyFlyerAttrs(el.flyer, f, b);
     el.flyer.innerHTML = flyerHTML(f, b);
     scalePreview();
-    if (window.recolorStickers3D) window.recolorStickers3D(el.flyer, safeColor(b.c1, "#D61E26"));
+    if (window.recolorStickers3D) window.recolorStickers3D(el.flyer, safeColor(b.c1, NEUTRAL.c1));
   }
   function scalePreview(frame = el.frame, scaleEl = el.scale, flyer = el.flyer) {
     const size = FORMAT_SIZE[flyer.dataset.format] || FORMAT_SIZE.story;
@@ -749,30 +758,46 @@
   });
 
   // ---------- onboarding ----------
+  // Primeiro acesso: começa no passo 1, exige escolher o tipo de negócio e digitar o nome da loja (sem "Pular").
   let onbStep = 1;
+  const onbRequired = () => !state.onboarded;
   function showOnb(step) {
     onbStep = step;
     document.querySelectorAll("#dlg-onboard .onb").forEach((s) => (s.hidden = Number(s.dataset.step) !== step));
     document.querySelectorAll("#dlg-onboard .onb-dots span").forEach((d, i) => d.classList.toggle("on", i === step - 1));
     $("onb-next").textContent = step === 3 ? "Começar" : "Continuar";
+    $("onb-skip").hidden = onbRequired();
+    $("onb-back").hidden = !(onbRequired() && step > 1);
+    onbError("");
   }
+  function onbError(msg) { const e = $("onb-error"); if (!e) return; e.textContent = msg; e.hidden = !msg; }
   let onbSeg = null;
   function renderOnbSegs() {
     $("onb-seg").innerHTML = SEG_ORDER.map((k) => `<button type="button" class="biz-item" role="radio" aria-checked="${k === onbSeg}" data-seg="${k}"><span class="biz-emo" aria-hidden="true">${SEGS[k].emoji}</span><span>${esc(SEGS[k].label)}</span></button>`).join("");
-    $("onb-store").placeholder = "ex.: " + window.segmentOf(onbSeg).storeEx;
+    $("onb-store").placeholder = onbSeg ? "ex.: " + window.segmentOf(onbSeg).storeEx : "Nome da sua loja";
   }
-  $("onb-seg").addEventListener("click", (e) => { const b = e.target.closest(".biz-item"); if (!b) return; onbSeg = b.dataset.seg; renderOnbSegs(); });
+  $("onb-seg").addEventListener("click", (e) => { const b = e.target.closest(".biz-item"); if (!b) return; onbSeg = b.dataset.seg; renderOnbSegs(); onbError(""); });
   function startOnboarding() {
     onbSeg = state.onboarded ? state.segment : null;
     renderOnbSegs();
     $("onb-store").value = isPresetName(state.brand.name) ? "" : state.brand.name;
     showOnb(1); openDialog($("dlg-onboard"));
   }
+  function validateOnbStep2() {
+    if (!onbRequired()) return true;
+    if (!onbSeg) { onbError("Escolha o tipo do seu negócio."); return false; }
+    if (!$("onb-store").value.trim()) { onbError("Digite o nome da sua loja."); $("onb-store").focus(); return false; }
+    return true;
+  }
   function finishOnboarding() {
+    const first = onbRequired();
     if (onbStep >= 2) {
       const name = $("onb-store").value.trim();
-      if (onbSeg && (onbSeg !== state.segment || !state.onboarded)) applySegment(onbSeg, { name, brand: true });
-      else if (name) { state.brand.name = name; if (state.brand.preset === "onix") state.brand.preset = "custom"; }
+      if (onbSeg && (onbSeg !== state.segment || first)) {
+        applySegment(onbSeg, { name, brand: true });
+        if (first) state.brand.slogan = ""; // loja nova: slogan em branco (só o exemplo no campo)
+      }
+      else if (name) { state.brand.name = name; if (!PRESETS[state.brand.preset]) state.brand.preset = "custom"; }
     }
     state.onboarded = true; persist(); fillForm(); renderFlyer(); closeDialog($("dlg-onboard"));
   }
@@ -794,9 +819,16 @@
     persist(); fillForm(); renderFlyer(); renderStickerGallery();
     return prev;
   }
-  $("onb-next").addEventListener("click", () => (onbStep < 3 ? showOnb(onbStep + 1) : finishOnboarding()));
-  $("onb-skip").addEventListener("click", () => { onbStep = 1; finishOnboarding(); });
-  $("dlg-onboard").addEventListener("cancel", () => { state.onboarded = true; persist(); });
+  $("onb-next").addEventListener("click", () => {
+    if (onbStep === 2 && !validateOnbStep2()) return;
+    if (onbStep < 3) showOnb(onbStep + 1); else finishOnboarding();
+  });
+  $("onb-back").addEventListener("click", () => { if (onbStep > 1) showOnb(onbStep - 1); });
+  $("onb-store").addEventListener("input", () => onbError(""));
+  $("onb-skip").addEventListener("click", () => { if (onbRequired()) return; onbStep = 1; finishOnboarding(); });
+  $("dlg-onboard").addEventListener("cancel", (e) => { if (onbRequired()) { e.preventDefault(); return; } });
+  // Se o navegador fechar a janela mesmo assim (Voltar do Android), reabre até terminar o primeiro acesso.
+  $("dlg-onboard").addEventListener("close", () => { if (onbRequired()) setTimeout(() => { if (onbRequired()) { openDialog($("dlg-onboard")); showOnb(onbStep); } }, 0); });
   $("btn-help").addEventListener("click", startOnboarding);
 
   // ---------- bindings ----------
@@ -873,7 +905,7 @@
     node.style.cssText += `;position:fixed;left:0;top:0;margin:0;transform:none;z-index:9997;width:${size.w}px;height:${size.h}px;`;
     document.body.append(node, cover);
     try {
-      if (window.recolorStickers3D) await window.recolorStickers3D(node, safeColor(state.brand.c1, "#D61E26"));
+      if (window.recolorStickers3D) await window.recolorStickers3D(node, safeColor(state.brand.c1, NEUTRAL.c1));
       await document.fonts.ready; await waitImgs(node);
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       const blob = await window.htmlToImage.toBlob(node, { pixelRatio: 1, canvasWidth: size.w, canvasHeight: size.h, width: size.w, height: size.h, backgroundColor: getComputedStyle(node).backgroundColor || "#fff" });

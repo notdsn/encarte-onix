@@ -493,7 +493,7 @@
 
     const out = canvas(OUT, OUT), ctx = ctx2d(out);
     if (opts.background === "tint") {
-      const c = hexToRgb(opts.tint || "#D61E26"), t = 0.08;
+      const c = hexToRgb(opts.tint || "#2563EB"), t = 0.08;
       ctx.fillStyle = `rgb(${Math.round(255 * (1 - t) + c.r * t)},${Math.round(255 * (1 - t) + c.g * t)},${Math.round(255 * (1 - t) + c.b * t)})`;
     } else ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, OUT, OUT);
