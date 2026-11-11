@@ -287,6 +287,14 @@ h1, h2, h3 { margin: 0; }
 .fs-inner .flyer-scale { box-shadow: 0 20px 60px rgba(0,0,0,0.45); }
 
 /* ===== additions ===== */
+.layout { grid-template-columns: minmax(0, 1fr); }
+.layout > *, .seg-item, .theme-swatch, .field, .p-prices > * { min-width: 0; }
+html, body { overflow-x: hidden; }
+@media (max-width: 380px) {
+  .topbar-brand strong { font-size: 15px; } .topbar-brand span { font-size: 11px; }
+  .top-btn { padding: 6px 10px; font-size: 12px; }
+  .seg-item { font-size: 12px; padding: 8px 6px; } .seg-item small { font-size: 10px; }
+}
 .skip { position: absolute; left: -9999px; }
 .skip:focus { left: 8px; top: 8px; z-index: 100; background: #fff; padding: 8px 12px; border-radius: 8px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
