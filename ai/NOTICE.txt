@@ -1,0 +1,23 @@
+Avisos de terceiros — Vitrine de Ofertas (Nextwave Studio Brasil)
+
+1) U²-Net / u2netp (remoção de fundo)
+   Autores: Xuebin Qin, Zichen Zhang, Chenyang Huang, Masood Dehghan,
+   Osmar R. Zaiane e Martin Jagersand.
+   Artigo: “U2-Net: Going Deeper with Nested U-Structure for Salient
+   Object Detection.” Pattern Recognition, 106, 107404, 2020.
+   https://arxiv.org/abs/2005.09007
+   Repositório e licença: https://github.com/xuebinqin/U-2-Net
+   Licença dos códigos e dos pesos publicados: Apache License 2.0
+   (confirmação do autor: https://github.com/xuebinqin/U-2-Net/issues/208)
+
+   O arquivo u2netp.onnx é a conversão ONNX do peso oficial u2netp
+   (4.574.861 bytes; MD5 8e83ca70e441ab06c318d82300c84806), distribuída
+   publicamente em:
+   https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx
+   O código do rembg é MIT (Copyright Daniel Gatis) e não reliceia os pesos.
+   Textos de licença: ai/licenses/
+
+2) ONNX Runtime Web 1.17.3
+   Copyright (c) Microsoft Corporation.
+   Licença: MIT
+   https://github.com/microsoft/onnxruntime

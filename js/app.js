@@ -25,11 +25,21 @@
     { id: "beleza", label: "Beleza (rosa)", sw: ["#d63384", "#fdf0f6", "#4a1d4f"] },
     { id: "black", label: "Black Friday", sw: ["#0d0d0d", "#1c1c1c", "#f5c400"] },
     { id: "natal", label: "Natal", sw: ["#b3121f", "#fbf6ee", "#116b3a"] },
+    { id: "gradiente", label: "Gradiente", sw: ["linear-gradient(135deg,var(--c1),var(--c2))", "#fff", "var(--c3)"], novo: true },
+    { id: "premium", label: "Premium", sw: ["#f7f3ec", "#fff", "#1a1a1a"], novo: true },
+    { id: "neon", label: "Neon Sale", sw: ["#0a0420", "#ff2bd6", "#00f0ff"], novo: true },
   ];
 
   const TITLE_SUGGESTIONS = ["Ofertas da Semana", "Ofertas do Mês", "Só Hoje!", "Black Friday", "Dia das Mães", "Saldão", "Ofertas de Natal"];
   const BADGES = ["Oferta", "Novidade", "Mais vendido", "Leve 2 pague 1", "Leve 3 pague 2", "Limite por cliente"];
   const FORMAT_SIZE = { story: { w: 1080, h: 1920 }, feed: { w: 1080, h: 1080 }, a4: { w: 1240, h: 1754 } };
+  const MAX_STICKERS = 8;
+  const STK_POS = [
+    ["footer-left", "Rodapé esquerdo"], ["footer-right", "Rodapé direito"],
+    ["tl", "Canto superior esquerdo"], ["tr", "Canto superior direito"],
+    ["bl", "Canto inferior esquerdo"], ["br", "Canto inferior direito"],
+  ];
+  const STK_SIZES = [["s", "P"], ["m", "M"], ["l", "G"]];
 
   const $ = (id) => document.getElementById(id);
   const el = {
@@ -42,6 +52,7 @@
     logoOnly: $("fld-logo-only"), logoOnlyWrap: $("logo-only-wrap"),
     disclaimer: $("fld-disclaimer"), list: $("product-list"), empty: $("empty-products"),
     count: $("product-count"), add: $("btn-add"),
+    stkGallery: $("stk-gallery"), stkUsed: $("stk-used"), stkCount: $("sticker-count"),
     toast: $("toast"), toastText: $("toast-text"), toastUndo: $("toast-undo"),
     fs: $("fs-overlay"), fsInner: $("fs-inner"), curName: $("current-flyer-name"),
   };
@@ -72,6 +83,7 @@
     return n <= 6 ? 2 : 3;
   }
   const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const ic = (n) => `<svg class="ic" aria-hidden="true"><use href="#i-${n}"/></svg>`;
   const safeColor = (c, d) => (/^#[0-9a-f]{6}$/i.test(c || "") ? c : d);
 
   // ---------- storage (IndexedDB with localStorage fallback) ----------
@@ -117,7 +129,24 @@
   function newFlyer(name, withSample) {
     const from = todayISO();
     return { id: uid("f"), name: name || "Encarte " + formatDateBR(from), updatedAt: Date.now(), theme: "classico", format: "story",
-      title: "Ofertas da Semana", dateFrom: from, dateTo: addDaysISO(from, 6), disclaimer: null, products: withSample ? sampleProducts() : [] };
+      title: "Ofertas da Semana", dateFrom: from, dateTo: addDaysISO(from, 6), disclaimer: null,
+      products: withSample ? sampleProducts() : [],
+      stickers: withSample ? [
+        { id: uid("s"), kind: "motoboy", pos: "footer-left", size: "m", caption: "Entregamos em casa!" },
+        { id: uid("s"), kind: "frete-gratis", pos: "footer-right", size: "m", caption: "" },
+      ] : [] };
+  }
+  function normSticker(s) {
+    const kinds = window.STICKERS || {};
+    const posOk = STK_POS.some(([k]) => k === s.pos);
+    const sizeOk = STK_SIZES.some(([k]) => k === s.size);
+    return {
+      id: s.id || uid("s"),
+      kind: kinds[s.kind] ? s.kind : "motoboy",
+      pos: posOk ? s.pos : "footer-left",
+      size: sizeOk ? s.size : "m",
+      caption: typeof s.caption === "string" ? s.caption.slice(0, 48) : "",
+    };
   }
   function normProduct(p) {
     return { id: p.id || uid(), name: p.name || "", details: p.details || "", oldPrice: p.oldPrice == null || p.oldPrice === "" ? null : Number(p.oldPrice),
@@ -128,7 +157,7 @@
     st.version = 2;
     st.brand = { ...brandFromPreset("onix"), ...(st.brand || {}) };
     if (!Array.isArray(st.flyers) || !st.flyers.length) st.flyers = [newFlyer("Meu primeiro encarte", true)];
-    st.flyers = st.flyers.map((f) => ({ ...newFlyer(), ...f, products: (f.products || []).slice(0, MAX_PRODUCTS).map(normProduct) }));
+    st.flyers = st.flyers.map((f) => ({ ...newFlyer(), ...f, products: (f.products || []).slice(0, MAX_PRODUCTS).map(normProduct), stickers: (f.stickers || []).slice(0, MAX_STICKERS).map(normSticker) }));
     if (!st.flyers.some((f) => f.id === st.currentId)) st.currentId = st.flyers[0].id;
     st.onboarded = !!st.onboarded;
     return st;
@@ -199,9 +228,11 @@
     }
   }
   function fitCrop() { if (!crop.img) return; crop.zoom = Math.min(cv.width / crop.img.width, cv.height / crop.img.height) * 0.92; crop.x = crop.y = 0; $("crop-zoom").value = crop.zoom; drawCrop(); }
-  async function openCrop(pid, file) {
+  async function openCrop(pid, file, src) {
     try {
-      crop.img = await loadImg(file ? await fileToDataURL(file) : productById(pid).photo);
+      const fromFile = file && typeof File !== "undefined" && file instanceof File;
+      const url = src || (typeof file === "string" ? file : null);
+      crop.img = await loadImg(fromFile ? await fileToDataURL(file) : (url || productById(pid).photo));
       crop.pid = pid;
       const zr = $("crop-zoom"); const base = Math.min(cv.width / crop.img.width, cv.height / crop.img.height);
       zr.min = (base * 0.4).toFixed(3); zr.max = (base * 5).toFixed(3); zr.step = (base / 100).toFixed(4);
@@ -226,6 +257,115 @@
     });
   })();
 
+  // ---------- deixar bonita com IA ----------
+  const enh = { pid: null, before: "", after: "", opts: { background: "white" }, busy: false };
+  function showEnhPane(name) {
+    $("enh-progress").hidden = name !== "progress";
+    $("enh-result").hidden = name !== "result";
+    $("enh-fail").hidden = name !== "fail";
+  }
+  function setEnhProgress(p, msg) {
+    $("enh-status").textContent = msg || "Trabalhando…";
+    $("enh-bar").value = Math.max(0, Math.min(100, Math.round((p || 0) * 100)));
+  }
+  async function srcForProduct(pid, file) {
+    if (file) return typeof file === "string" ? file : await fileToDataURL(file);
+    const p = productById(pid);
+    if (p?.photo) return p.photo;
+    return null;
+  }
+  async function openEnhance(pid, file) {
+    const p = productById(pid);
+    if (!p) return;
+    if (!file && !p.photo) {
+      const inp = document.createElement("input");
+      inp.type = "file"; inp.accept = "image/*";
+      inp.addEventListener("change", () => { if (inp.files?.[0]) openEnhance(pid, inp.files[0]); });
+      inp.click();
+      return;
+    }
+    const API = window.VitrineEnhance;
+    if (!API) { toast("A melhoria com IA ainda está carregando. Tente de novo.", { error: true }); return; }
+    if (!API.supported()) {
+      enh.pid = pid; enh.before = await srcForProduct(pid, file);
+      showEnhPane("fail");
+      $("enh-fail-text").textContent = "Este aparelho não consegue rodar a IA. Você pode cortar a foto na mão e deixar o fundo branco.";
+      openDialog($("dlg-enhance"));
+      return;
+    }
+    enh.pid = pid;
+    enh.before = await srcForProduct(pid, file);
+    enh.after = "";
+    enh.opts.background = $("enh-tint").checked ? "tint" : "white";
+    showEnhPane("progress");
+    setEnhProgress(0.01, "Preparando…");
+    openDialog($("dlg-enhance"));
+    const weak = API.isWeak();
+    if (weak === "low-memory") setEnhProgress(0.02, "Este aparelho é mais simples; pode demorar um pouco…");
+    enh.busy = true;
+    try {
+      const tint = safeColor(state.brand.c1, "#D61E26");
+      const out = await API.enhance(enh.before, {
+        background: enh.opts.background, tint,
+        onProgress: setEnhProgress,
+      });
+      enh.after = out.dataURL;
+      $("enh-before").src = enh.before;
+      $("enh-after").src = enh.after;
+      showEnhPane("result");
+    } catch (e) {
+      console.error(e);
+      $("enh-fail-text").textContent = (e && e.message ? e.message + " " : "") + "Você pode cortar a foto na mão e deixar o fundo branco.";
+      showEnhPane("fail");
+    } finally { enh.busy = false; }
+  }
+  async function rerunEnhance() {
+    if (!enh.before || enh.busy) return;
+    const API = window.VitrineEnhance;
+    showEnhPane("progress");
+    setEnhProgress(0.7, "Aplicando o novo fundo…");
+    enh.busy = true;
+    try {
+      const out = await API.enhance(enh.before, {
+        background: $("enh-tint").checked ? "tint" : "white",
+        tint: safeColor(state.brand.c1, "#D61E26"),
+        onProgress: setEnhProgress,
+      });
+      enh.after = out.dataURL;
+      $("enh-after").src = enh.after;
+      showEnhPane("result");
+    } catch (e) {
+      $("enh-fail-text").textContent = e.message || "Não deu para processar.";
+      showEnhPane("fail");
+    } finally { enh.busy = false; }
+  }
+  function applyEnhance() {
+    const p = productById(enh.pid);
+    if (!p || !enh.after) return;
+    const prev = p.photo;
+    p.photo = enh.after;
+    persist(); renderProductList(); renderFlyer();
+    closeDialog($("dlg-enhance"));
+    toast("Foto melhorada com IA.", { undo: () => { p.photo = prev; persist(); renderProductList(); renderFlyer(); } });
+  }
+  function enhanceToManual() {
+    const pid = enh.pid, src = enh.after || enh.before;
+    closeDialog($("dlg-enhance"));
+    if (pid && src) openCrop(pid, src);
+  }
+  $("enh-apply").addEventListener("click", applyEnhance);
+  $("enh-manual").addEventListener("click", enhanceToManual);
+  $("enh-fallback").addEventListener("click", enhanceToManual);
+  $("enh-tint").addEventListener("change", () => { if (enh.after && !enh.busy) rerunEnhance(); });
+  $("dlg-enhance").addEventListener("cancel", (e) => { if (enh.busy) e.preventDefault(); });
+  $("crop-enhance").addEventListener("click", () => {
+    const pid = crop.pid;
+    if (!pid) return;
+    const src = crop.img?.src || productById(pid)?.photo;
+    closeDialog($("dlg-photo"));
+    if (src) openEnhance(pid, src);
+  });
+
   // ---------- dialogs ----------
   function openDialog(d) { if (typeof d.showModal === "function") { if (!d.open) d.showModal(); } else d.setAttribute("open", ""); }
   function closeDialog(d) { if (typeof d.close === "function") d.close(); else d.removeAttribute("open"); }
@@ -239,7 +379,7 @@
   function renderThemes() {
     const f = cur();
     $("theme-group").innerHTML = THEMES.map((t) => `<label class="theme-swatch"><input type="radio" name="theme" value="${t.id}" ${t.id === f.theme ? "checked" : ""}>
-      <span class="sw" style="--c1:${state.brand.c1};--c2:${state.brand.c2};--c3:${state.brand.c3}"><i style="background:${t.sw[0]}"></i><i style="background:${t.sw[1]}"></i><i style="background:${t.sw[2]}"></i></span>${esc(t.label)}</label>`).join("");
+      <span class="sw" style="--c1:${state.brand.c1};--c2:${state.brand.c2};--c3:${state.brand.c3}"><i style="background:${t.sw[0]}"></i><i style="background:${t.sw[1]}"></i><i style="background:${t.sw[2]}"></i></span>${esc(t.label)}${t.novo ? '<em class="new">novo</em>' : ""}</label>`).join("");
     document.querySelectorAll('input[name="theme"]').forEach((i) => i.addEventListener("change", () => { if (i.checked) { cur().theme = i.value; persist(); renderFlyer(); } }));
   }
   function fillForm() {
@@ -253,7 +393,7 @@
     el.address.value = b.address || ""; el.whatsapp.value = b.whatsapp || ""; el.instagram.value = b.instagram || "";
     document.querySelectorAll('input[name="format"]').forEach((i) => (i.checked = i.value === f.format));
     el.curName.textContent = f.name;
-    renderThemes(); updateLogoChrome(); renderProductList();
+    renderThemes(); updateLogoChrome(); renderProductList(); renderStickerUI();
   }
   function logoHTML(b) {
     if (b.logo) return `<div class="fl-logo img"><img src="${b.logo}" alt=""></div>`;
@@ -276,7 +416,7 @@
     ps.forEach((p, i) => el.list.appendChild(productCard(p, i)));
     el.count.textContent = `(${ps.length}/${MAX_PRODUCTS})`;
     el.add.disabled = ps.length >= MAX_PRODUCTS;
-    el.add.textContent = ps.length >= MAX_PRODUCTS ? "Limite de 12 produtos" : "+ Adicionar produto";
+    el.add.innerHTML = ps.length >= MAX_PRODUCTS ? "Limite de 12 produtos" : `${ic("plus")} Adicionar produto`;
     el.empty.hidden = ps.length > 0;
   }
   function productCard(p, idx) {
@@ -285,13 +425,13 @@
     const off = discountPct(p.oldPrice, p.newPrice);
     w.innerHTML = `
       <div class="p-head-row">
-        <button type="button" class="p-handle" aria-label="Arrastar para reordenar o produto ${idx + 1}">⠿</button>
+        <button type="button" class="p-handle" aria-label="Arrastar para reordenar o produto ${idx + 1}">${ic("grip-vertical")}</button>
         <span class="p-title">${idx + 1}. ${esc(p.name || "Novo produto")}</span>
-        <button type="button" class="p-remove" data-act="remove" aria-label="Remover ${esc(p.name || "produto")}">Remover</button>
+        <button type="button" class="p-remove" data-act="remove" aria-label="Remover ${esc(p.name || "produto")}">${ic("trash-2")}</button>
       </div>
       <div class="p-top">
         <label class="p-photo ${p.photo ? "has-img" : ""}" aria-label="${p.photo ? "Trocar foto" : "Adicionar foto"} do produto">
-          ${p.photo ? `<img src="${p.photo}" alt="">` : "＋ Foto"}
+          ${p.photo ? `<img src="${p.photo}" alt="">` : `${ic("image")}<span>Foto</span>`}
           <input type="file" accept="image/*" data-act="photo">
         </label>
         <div class="p-fields">
@@ -306,8 +446,9 @@
       </div>
       <label class="field">Selo<input type="text" list="badge-list" data-act="badge" maxlength="32" value="${esc(p.badge)}" placeholder="ex.: Leve 3 pague 2"></label>
       <div class="p-actions">
-        ${p.photo ? `<button type="button" class="btn-text" data-act="crop">Ajustar foto</button><button type="button" class="btn-text" data-act="nophoto">Tirar foto</button>` : "<span></span>"}
-        <button type="button" class="btn-text" data-act="dup">Duplicar</button>
+        ${p.photo ? `<button type="button" class="btn-text" data-act="crop">${ic("crop")} Ajustar</button><button type="button" class="btn-text" data-act="nophoto">${ic("x")} Tirar foto</button>` : "<span></span>"}
+        <button type="button" class="btn-text" data-act="enhance">${ic("sparkles")} Deixar bonita com IA</button>
+        <button type="button" class="btn-text" data-act="dup">${ic("copy")} Duplicar</button>
       </div>`;
     w.addEventListener("input", onProductInput);
     w.addEventListener("change", onProductInput);
@@ -346,6 +487,7 @@
       ps.splice(i + 1, 0, { ...clone(ps[i]), id: uid() });
     } else if (act === "nophoto") ps[i].photo = "";
     else if (act === "crop") return openCrop(ps[i].id);
+    else if (act === "enhance") return openEnhance(ps[i].id);
     else return;
     persist(); renderProductList(); renderFlyer();
   }
@@ -354,6 +496,84 @@
     window.Sortable.create(el.list, {
       handle: ".p-handle", animation: 150, delay: 0, ghostClass: "sortable-ghost", chosenClass: "sortable-chosen",
       onEnd: (e) => { if (e.oldIndex === e.newIndex) return; const ps = cur().products; const [it] = ps.splice(e.oldIndex, 1); ps.splice(e.newIndex, 0, it); persist(); renderProductList(); renderFlyer(); },
+    });
+  }
+
+  // ---------- figurinhas ----------
+  function applyStickerColors() {
+    const b = state.brand, c1 = safeColor(b.c1, "#D61E26"), c2 = safeColor(b.c2, "#1C3FAA"), c3 = safeColor(b.c3, "#FFD600");
+    [el.stkGallery, el.stkUsed].forEach((n) => { if (!n) return; n.style.setProperty("--c1", c1); n.style.setProperty("--c2", c2); n.style.setProperty("--c3", c3); });
+  }
+  function nextStickerPos() {
+    const used = new Set((cur().stickers || []).map((s) => s.pos));
+    return (STK_POS.find(([p]) => !used.has(p)) || STK_POS[0])[0];
+  }
+  function renderStickerGallery() {
+    const S = window.STICKERS || {};
+    el.stkGallery.innerHTML = Object.entries(S).map(([id, meta]) =>
+      `<button type="button" class="stk-pick" data-kind="${id}" role="listitem" aria-label="Adicionar figurinha ${esc(meta[0])}">${window.stickerSVG(id)}<span>${esc(meta[0])}</span></button>`
+    ).join("");
+  }
+  function renderStickerUsed() {
+    const list = cur().stickers || [];
+    el.stkCount.textContent = `(${list.length}/${MAX_STICKERS})`;
+    el.stkUsed.innerHTML = list.map((s) => {
+      const label = (window.STICKERS[s.kind] || ["Figurinha"])[0];
+      const posOpts = STK_POS.map(([v, l]) => `<option value="${v}" ${v === s.pos ? "selected" : ""}>${esc(l)}</option>`).join("");
+      const sizes = STK_SIZES.map(([v, l]) => `<button type="button" data-act="size" data-size="${v}" aria-pressed="${s.size === v}">${l}</button>`).join("");
+      return `<article class="stk-item" data-id="${s.id}">
+        <div class="stk-thumb" aria-hidden="true">${window.stickerSVG(s.kind)}</div>
+        <div class="stk-fields">
+          <strong class="p-title">${esc(label)}</strong>
+          <div class="stk-row">
+            <label class="field">Posição<select data-act="pos">${posOpts}</select></label>
+            <div class="field">Tamanho<div class="stk-size" role="group" aria-label="Tamanho">${sizes}</div></div>
+          </div>
+          <label class="field">Texto ao lado (opcional)<input type="text" data-act="caption" maxlength="48" value="${esc(s.caption)}" placeholder="ex.: Entregamos em casa!"></label>
+        </div>
+        <button type="button" class="p-remove" data-act="remove" aria-label="Remover ${esc(label)}">${ic("trash-2")}</button>
+      </article>`;
+    }).join("");
+    applyStickerColors();
+  }
+  function renderStickerUI() { applyStickerColors(); renderStickerUsed(); }
+  function addSticker(kind) {
+    const f = cur();
+    f.stickers = f.stickers || [];
+    if (f.stickers.length >= MAX_STICKERS) return toast("Limite de 8 figurinhas neste encarte.");
+    if (!window.STICKERS[kind]) return;
+    const caps = window.STICKER_CAPTIONS || {};
+    const cap = caps[kind] || "";
+    f.stickers.push({ id: uid("s"), kind, pos: nextStickerPos(), size: "m", caption: (window.stickerCaptionOK && !window.stickerCaptionOK(kind, cap)) ? "" : cap });
+    persist(); renderStickerUsed(); renderFlyer();
+    toast(`Figurinha “${window.STICKERS[kind][0]}” adicionada.`);
+    el.stkUsed.lastElementChild?.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  }
+  function initStickers() {
+    renderStickerGallery();
+    el.stkGallery.addEventListener("click", (e) => {
+      const b = e.target.closest(".stk-pick"); if (b) addSticker(b.dataset.kind);
+    });
+    el.stkUsed.addEventListener("input", (e) => {
+      const item = e.target.closest(".stk-item"); if (!item) return;
+      const s = (cur().stickers || []).find((x) => x.id === item.dataset.id); if (!s) return;
+      if (e.target.dataset.act === "caption") { s.caption = e.target.value.slice(0, 48); persist(); renderFlyer(); }
+    });
+    el.stkUsed.addEventListener("change", (e) => {
+      const item = e.target.closest(".stk-item"); if (!item) return;
+      const s = (cur().stickers || []).find((x) => x.id === item.dataset.id); if (!s) return;
+      if (e.target.dataset.act === "pos") { s.pos = e.target.value; persist(); renderFlyer(); }
+    });
+    el.stkUsed.addEventListener("click", (e) => {
+      const item = e.target.closest(".stk-item"); if (!item) return;
+      const btn = e.target.closest("button[data-act]"); if (!btn) return;
+      const list = cur().stickers || [], i = list.findIndex((x) => x.id === item.dataset.id); if (i < 0) return;
+      if (btn.dataset.act === "size") { list[i].size = btn.dataset.size; persist(); renderStickerUsed(); renderFlyer(); }
+      else if (btn.dataset.act === "remove") {
+        const [removed] = list.splice(i, 1); const fid = state.currentId;
+        persist(); renderStickerUsed(); renderFlyer();
+        toast(`Figurinha removida.`, { undo: () => { const f = state.flyers.find((x) => x.id === fid); if (f) { f.stickers.splice(i, 0, removed); persist(); if (fid === state.currentId) { renderStickerUsed(); renderFlyer(); } } } });
+      }
     });
   }
 
@@ -386,14 +606,34 @@
     const hideName = b.logo && b.logoOnly;
     const dates = datesLine(f), contacts = contactBits(b);
     const disc = f.disclaimer ?? (PRESETS[b.preset]?.disclaimer || DEFAULT_DISCLAIMER);
+    const stks = (f.stickers || []).filter((s) => window.STICKERS && window.STICKERS[s.kind]);
+    const stkNode = (s) => {
+      const raw = (s.caption || "").trim();
+      const cap = (window.stickerCaptionOK ? window.stickerCaptionOK(s.kind, raw) : !!raw) ? raw : "";
+      return `<div class="fl-stk" data-pos="${esc(s.pos)}" data-size="${esc(s.size || "m")}">${window.stickerSVG(s.kind)}${cap ? `<span class="fl-stk-cap">${esc(cap)}</span>` : ""}</div>`;
+    };
+    const corners = stks.filter((s) => /^(tl|tr|bl|br)$/.test(s.pos)).map(stkNode).join("");
+    const footStk = stks.filter((s) => String(s.pos).startsWith("footer")).map(stkNode).join("");
     return `<header class="fl-head"><div class="fl-brand">${logoHTML(b)}${hideName ? "" : `<div><div class="fl-name">${esc(b.name || "Sua loja")}</div>${b.slogan ? `<div class="fl-tag">${esc(b.slogan)}</div>` : ""}</div>`}</div>
       <div class="fl-band"><h1 class="fl-title">${esc(f.title || "Ofertas da Semana")}</h1>${dates ? `<p class="fl-dates">${esc(dates)}</p>` : ""}</div></header>
-      <section class="fl-grid">${cards}</section>
-      <footer class="fl-foot">${contacts.length ? `<div class="fl-contact">${contacts.join("")}</div>` : ""}${disc ? `<p class="fl-disc">${esc(disc)}</p>` : ""}</footer>`;
+      <div class="fl-body"><section class="fl-grid">${cards}</section>${corners}</div>
+      <footer class="fl-foot">${footStk ? `<div class="fl-stk-foot">${footStk}</div>` : ""}${contacts.length ? `<div class="fl-contact">${contacts.join("")}</div>` : ""}${disc ? `<p class="fl-disc">${esc(disc)}</p>` : ""}</footer>`;
   }
   function applyFlyerAttrs(node, f, b) {
     const n = f.products.length, size = FORMAT_SIZE[f.format] || FORMAT_SIZE.story;
-    Object.assign(node.dataset, { format: f.format, theme: f.theme, count: String(n), cols: String(colsFor(f.format, n)), density: densityFor(n) });
+    const stks = f.stickers || [];
+    const rank = { s: 1, m: 2, l: 3 }, sizeOf = (list) => {
+      let m = 0; list.forEach((s) => { m = Math.max(m, rank[s.size] || 2); });
+      return m ? ["", "s", "m", "l"][m] : "";
+    };
+    const top = stks.filter((s) => s.pos === "tl" || s.pos === "tr");
+    const bot = stks.filter((s) => s.pos === "bl" || s.pos === "br");
+    Object.assign(node.dataset, {
+      format: f.format, theme: f.theme, count: String(n), cols: String(colsFor(f.format, n)), density: densityFor(n),
+      stkTop: sizeOf(top), stkBottom: sizeOf(bot),
+      stkTl: top.some((s) => s.pos === "tl") ? "1" : "", stkTr: top.some((s) => s.pos === "tr") ? "1" : "",
+      stkBl: bot.some((s) => s.pos === "bl") ? "1" : "", stkBr: bot.some((s) => s.pos === "br") ? "1" : "",
+    });
     node.style.width = size.w + "px"; node.style.height = size.h + "px";
     node.style.setProperty("--c1", safeColor(b.c1, "#D61E26")); node.style.setProperty("--c2", safeColor(b.c2, "#1C3FAA")); node.style.setProperty("--c3", safeColor(b.c3, "#FFD600"));
   }
@@ -401,7 +641,6 @@
     const f = cur(), b = state.brand;
     applyFlyerAttrs(el.flyer, f, b);
     el.flyer.innerHTML = flyerHTML(f, b);
-    document.querySelector('meta[name="theme-color"]').content = "#1C3FAA";
     scalePreview();
   }
   function scalePreview(frame = el.frame, scaleEl = el.scale, flyer = el.flyer) {
@@ -417,8 +656,8 @@
     $("flyer-list").innerHTML = list.map((f) => `<div class="fl-item ${f.id === state.currentId ? "current" : ""}" data-id="${f.id}">
       <div class="info"><strong>${esc(f.name)}</strong><small>${f.products.length} produto(s) · ${new Date(f.updatedAt).toLocaleDateString("pt-BR")}</small></div>
       ${f.id === state.currentId ? "<small>Aberto</small>" : `<button type="button" data-a="open">Abrir</button>`}
-      <button type="button" data-a="rename" aria-label="Renomear ${esc(f.name)}">✎</button>
-      <button type="button" data-a="del" aria-label="Apagar ${esc(f.name)}">🗑</button></div>`).join("");
+      <button type="button" data-a="rename" aria-label="Renomear ${esc(f.name)}">${ic("pencil")}</button>
+      <button type="button" data-a="del" aria-label="Apagar ${esc(f.name)}">${ic("trash-2")}</button></div>`).join("");
   }
   $("flyer-list").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-a]"); if (!b) return;
@@ -441,6 +680,7 @@
   $("btn-dup-flyer").addEventListener("click", () => {
     const f = { ...clone(cur()), id: uid("f"), name: cur().name + " (cópia)", updatedAt: Date.now() };
     f.products = f.products.map((p) => ({ ...p, id: uid() }));
+    f.stickers = (f.stickers || []).map((s) => ({ ...s, id: uid("s") }));
     state.flyers.push(f); state.currentId = f.id; persist(); fillForm(); renderFlyer(); closeDialog($("dlg-flyers")); toast("Encarte duplicado.");
   });
 
@@ -486,7 +726,7 @@
     $("title-chips").addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (!c) return; cur().title = c.textContent; el.title.value = c.textContent; persist(); renderFlyer(); });
     const dl = document.createElement("datalist"); dl.id = "badge-list"; dl.innerHTML = BADGES.map((b) => `<option value="${esc(b)}">`).join(""); document.body.appendChild(dl);
 
-    const br = (key, getter) => (e) => { state.brand[key] = getter ? getter(e.target) : e.target.value; if (["name", "slogan", "c1", "c2", "c3", "mark"].includes(key)) { state.brand.preset = "custom"; el.preset.value = "custom"; } persist(); updateLogoChrome(); if (/^c\d$/.test(key)) renderThemes(); renderFlyer(); };
+    const br = (key, getter) => (e) => { state.brand[key] = getter ? getter(e.target) : e.target.value; if (["name", "slogan", "c1", "c2", "c3", "mark"].includes(key)) { state.brand.preset = "custom"; el.preset.value = "custom"; } persist(); updateLogoChrome(); if (/^c\d$/.test(key)) { renderThemes(); applyStickerColors(); } renderFlyer(); };
     el.store.addEventListener("input", br("name")); el.slogan.addEventListener("input", br("slogan"));
     el.c1.addEventListener("input", br("c1")); el.c2.addEventListener("input", br("c2")); el.c3.addEventListener("input", br("c3"));
     el.mark.addEventListener("change", br("mark")); el.logoOnly.addEventListener("change", br("logoOnly", (t) => t.checked));
@@ -548,8 +788,9 @@
     } finally { node.remove(); cover.remove(); }
   }
   async function exportPng(share) {
-    const btn = share ? $("btn-share") : $("btn-png"), old = btn.textContent;
-    btn.disabled = true; btn.textContent = "Gerando…";
+    if ($("dlg-export").open) closeDialog($("dlg-export"));
+    const btn = share ? $("btn-share") : $("btn-png"), old = btn.innerHTML;
+    btn.disabled = true;
     try {
       const blob = await renderPngBlob(), name = fileName();
       if (share && navigator.share) {
@@ -564,9 +805,10 @@
       setTimeout(() => URL.revokeObjectURL(href), 5000);
       toast(share ? "Compartilhar não está disponível aqui; o PNG foi baixado." : "PNG salvo.");
     } catch (e) { console.error(e); toast(e.message || "Não deu para gerar o PNG.", { error: true }); }
-    finally { btn.disabled = false; btn.textContent = old; }
+    finally { btn.disabled = false; btn.innerHTML = old; }
   }
   function printA4() {
+    if ($("dlg-export").open) closeDialog($("dlg-export"));
     const f = cur(), prev = f.format;
     if (prev !== "a4") { f.format = "a4"; renderFlyer(); }
     document.documentElement.style.setProperty("--print-scale", String(793 / 1240));
@@ -606,16 +848,37 @@
   }
   function closeFullscreen() { el.fs.hidden = true; el.fsInner.replaceChildren(); $("btn-fullscreen").focus(); }
 
+  // ---------- modern chrome: dark mode + tab bar ----------
+  function applyMode(dark) {
+    document.documentElement.dataset.mode = dark ? "dark" : "light";
+    $("btn-theme-mode").innerHTML = ic(dark ? "sun" : "moon");
+    $("btn-theme-mode").setAttribute("aria-pressed", String(dark));
+    document.querySelector('meta[name="theme-color"]').content = dark ? "#0b1020" : "#1C3FAA";
+  }
+  function initChrome() {
+    let saved = null; try { saved = localStorage.getItem("vitrine-mode"); } catch {}
+    applyMode(saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches);
+    $("btn-theme-mode").addEventListener("click", () => { const d = document.documentElement.dataset.mode !== "dark"; applyMode(d); try { localStorage.setItem("vitrine-mode", d ? "dark" : "light"); } catch {} });
+    const tabs = [...document.querySelectorAll(".tab[data-go]")];
+    const smooth = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    tabs.forEach((b) => b.addEventListener("click", () => { const s = $(b.dataset.go); const y = s.getBoundingClientRect().top + scrollY - 76; scrollTo({ top: Math.max(0, y), behavior: smooth }); }));
+    if ("IntersectionObserver" in window) {
+      const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) tabs.forEach((t) => t.classList.toggle("active", t.dataset.go === e.target.id)); }), { rootMargin: "-40% 0px -55% 0px" });
+      tabs.forEach((t) => io.observe($(t.dataset.go)));
+    }
+    $("btn-export").addEventListener("click", () => openDialog($("dlg-export")));
+  }
+
   // ---------- boot ----------
   async function boot() {
     let saved = await storeGet();
     if (!saved) saved = migrateLegacy();
     state = normalize(saved);
-    bindForm(); fillForm(); renderFlyer(); initSortable();
+    bindForm(); initStickers(); fillForm(); renderFlyer(); initSortable(); initChrome();
     window.addEventListener("resize", () => scalePreview());
     if (!state.onboarded) startOnboarding();
     if ("serviceWorker" in navigator && window.isSecureContext) navigator.serviceWorker.register("sw.js").catch(() => {});
-    window.__vitrine = { get state() { return state; }, renderPngBlob };
+    window.__vitrine = { get state() { return state; }, renderPngBlob, renderFlyer, renderStickerUI, openEnhance, openCrop };
   }
   boot();
 })();
