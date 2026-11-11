@@ -11,7 +11,7 @@
   // Cores neutras usadas quando a loja ainda não tem marca.
   const NEUTRAL = { c1: "#2563EB", c2: "#0F172A", c3: "#FACC15" };
   // Loja em branco: quem instala o app começa sem nenhuma loja pré-preenchida.
-  const BLANK_BRAND = { preset: "none", name: "", slogan: "", c1: NEUTRAL.c1, c2: NEUTRAL.c2, c3: NEUTRAL.c3, mark: "icone", logo: "", logoOnly: false, address: "", whatsapp: "", instagram: "" };
+  const BLANK_BRAND = { preset: "none", name: "", slogan: "", c1: NEUTRAL.c1, c2: NEUTRAL.c2, c3: NEUTRAL.c3, mark: "icone", logo: "", logoSrc: "", logoCutout: false, logoOnly: false, address: "", whatsapp: "", instagram: "" };
   // Modelos de marca: um genérico para cada tipo de negócio.
   const PRESETS = {};
   SEG_ORDER.forEach((k) => { PRESETS[k] = { label: SEGS[k].label + " (genérico)", ...SEGS[k].brand, segment: k }; });
@@ -47,8 +47,9 @@
     preset: $("fld-preset"), store: $("fld-store"), slogan: $("fld-slogan"),
     c1: $("fld-c1"), c2: $("fld-c2"), c3: $("fld-c3"), mark: $("fld-mark"),
     address: $("fld-address"), whatsapp: $("fld-whatsapp"), instagram: $("fld-instagram"),
-    logo: $("fld-logo"), logoPreview: $("logo-preview"), logoClear: $("btn-logo-clear"),
+    logo: $("fld-logo"), logoCam: $("fld-logo-cam"), logoPreview: $("logo-preview"), logoClear: $("btn-logo-clear"),
     logoOnly: $("fld-logo-only"), logoOnlyWrap: $("logo-only-wrap"),
+    logoCutout: $("fld-logo-cutout"), logoCutoutWrap: $("logo-cutout-wrap"), logoText: $("lbl-logo-text"),
     disclaimer: $("fld-disclaimer"), list: $("product-list"), empty: $("empty-products"),
     count: $("product-count"), add: $("btn-add"),
     stkGallery: $("stk-gallery"), stkUsed: $("stk-used"), stkCount: $("sticker-count"),
@@ -114,7 +115,7 @@
   function brandFromPreset(key, keep) {
     const p = PRESETS[key];
     if (!p) return { ...BLANK_BRAND, address: keep?.address || "", whatsapp: keep?.whatsapp || "", instagram: keep?.instagram || "" };
-    return { preset: key, name: p.name, slogan: p.slogan, c1: p.c1, c2: p.c2, c3: p.c3, mark: p.mark, logo: "", logoOnly: false,
+    return { preset: key, name: p.name, slogan: p.slogan, c1: p.c1, c2: p.c2, c3: p.c3, mark: p.mark, logo: "", logoSrc: "", logoCutout: false, logoOnly: false,
       address: keep?.address || "", whatsapp: keep?.whatsapp || "", instagram: keep?.instagram || "" };
   }
   function sampleProducts(segId) {
@@ -209,14 +210,35 @@
   // ---------- images ----------
   function loadImg(src) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error("Não foi possível ler a imagem.")); i.src = src; }); }
   function fileToDataURL(file) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); }); }
+  const LOGO_MAX = 512;
+  const LOGO_OK = /^(image\/(png|jpeg|jpg|pjpeg|x-png|webp))$/i;
+  async function decodeImage(fileOrUrl) {
+    if (fileOrUrl && typeof fileOrUrl !== "string" && typeof createImageBitmap === "function") {
+      try { return await createImageBitmap(fileOrUrl, { imageOrientation: "from-image" }); } catch {}
+    }
+    const src = typeof fileOrUrl === "string" ? fileOrUrl : await fileToDataURL(fileOrUrl);
+    return loadImg(src);
+  }
   async function shrinkLogo(file) {
-    if (!file || !file.type.startsWith("image/")) throw new Error("Escolha um arquivo de imagem.");
-    const img = await loadImg(await fileToDataURL(file));
-    const s = Math.min(1, 600 / Math.max(img.width, img.height));
-    const c = document.createElement("canvas"); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
-    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    if (!file) throw new Error("Escolha um arquivo de imagem.");
+    const name = (file.name || "").toLowerCase();
+    const typeOk = LOGO_OK.test(file.type || "") || /\.(png|jpe?g|webp)$/.test(name) || (file.type || "").startsWith("image/");
+    if (!typeOk) throw new Error("Envie um logo em PNG, JPG ou WebP.");
+    const img = await decodeImage(file);
+    const w0 = img.width, h0 = img.height;
+    if (!w0 || !h0) throw new Error("Não foi possível ler a imagem.");
+    const s = Math.min(1, LOGO_MAX / Math.max(w0, h0));
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(w0 * s));
+    c.height = Math.max(1, Math.round(h0 * s));
+    const x = c.getContext("2d", { alpha: true });
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = "high";
+    x.clearRect(0, 0, c.width, c.height);
+    x.drawImage(img, 0, 0, c.width, c.height);
+    if (img.close) try { img.close(); } catch {}
     return c.toDataURL("image/png");
   }
+  function keepLogoFields(b) { return { logo: b.logo || "", logoSrc: b.logoSrc || "", logoCutout: !!b.logoCutout, logoOnly: !!b.logoOnly }; }
 
   // Guarda a foto original (até 2048 px) para a IA trabalhar com qualidade, não com o recorte pequeno.
   async function keepOriginal(dataURL) {
@@ -442,11 +464,77 @@
     if (b.mark === "inicial") return `<div class="fl-logo"><span class="ini">${esc((b.name || "?").trim().charAt(0).toUpperCase())}</span></div>`;
     return `<div class="fl-logo"><span class="cross"></span></div>`;
   }
+  function logoPreviewHTML(b, size) {
+    const s = size || 80;
+    if (b.logo) return `<img src="${b.logo}" alt="">`;
+    return `<div class="flyer" style="width:${s}px;height:${s}px;--logo:${s}px;--c2:${b.c2};background:transparent">${logoHTML(b)}</div>`;
+  }
   function updateLogoChrome() {
-    const b = state.brand;
-    el.logoPreview.style.background = b.logo ? "#fff" : b.c2;
-    el.logoPreview.innerHTML = b.logo ? `<img src="${b.logo}" alt="">` : `<div class="flyer" style="width:64px;height:64px;--logo:64px;--c2:${b.c2};background:transparent">${logoHTML(b)}</div>`;
-    el.logoClear.hidden = !b.logo; el.logoOnlyWrap.hidden = !b.logo;
+    const b = state.brand, has = !!b.logo;
+    const previews = [el.logoPreview, $("onb-logo-preview")].filter(Boolean);
+    previews.forEach((node) => {
+      node.classList.toggle("has-img", has);
+      node.innerHTML = logoPreviewHTML(b, 80);
+    });
+    [el.logoText, $("onb-logo-text")].filter(Boolean).forEach((n) => { n.textContent = has ? "Trocar" : "Enviar logo"; });
+    [el.logoClear, $("onb-logo-clear")].filter(Boolean).forEach((n) => { n.hidden = !has; });
+    [el.logoCutoutWrap, $("onb-logo-cutout-wrap")].filter(Boolean).forEach((n) => { n.hidden = !has; });
+    [el.logoCutout, $("onb-logo-cutout")].filter(Boolean).forEach((n) => { n.checked = !!b.logoCutout; });
+    if (el.logoOnlyWrap) el.logoOnlyWrap.hidden = !has;
+  }
+  async function applyLogoFile(file) {
+    const data = await shrinkLogo(file);
+    state.brand.logo = data;
+    state.brand.logoSrc = data;
+    state.brand.logoCutout = false;
+    persist(); updateLogoChrome(); renderFlyer();
+  }
+  function clearLogo() {
+    const old = keepLogoFields(state.brand);
+    state.brand.logo = ""; state.brand.logoSrc = ""; state.brand.logoCutout = false; state.brand.logoOnly = false;
+    if (el.logoOnly) el.logoOnly.checked = false;
+    persist(); updateLogoChrome(); renderFlyer();
+    toast("Logo removido.", { undo: () => { Object.assign(state.brand, old); persist(); updateLogoChrome(); renderFlyer(); } });
+  }
+  let logoAiBusy = false, logoAiTitle = "";
+  async function setLogoCutout(on) {
+    if (!on) {
+      if (state.brand.logoSrc) state.brand.logo = state.brand.logoSrc;
+      state.brand.logoCutout = false;
+      persist(); updateLogoChrome(); renderFlyer();
+      return;
+    }
+    const src = state.brand.logoSrc || state.brand.logo;
+    if (!src) { updateLogoChrome(); return; }
+    const API = window.VitrineEnhance;
+    if (!API || !API.cutout) { toast("A IA ainda está carregando. Tente de novo.", { error: true }); updateLogoChrome(); return; }
+    if (!API.supported()) { toast("Este aparelho não consegue tirar o fundo com IA.", { error: true }); updateLogoChrome(); return; }
+    if (logoAiBusy) return;
+    logoAiBusy = true;
+    const dlg = $("dlg-enhance");
+    logoAiTitle = $("dlg-enhance-title").textContent;
+    $("dlg-enhance-title").textContent = "Tirar fundo com IA";
+    dlg.classList.add("is-logo");
+    showEnhPane("progress");
+    setEnhProgress(0.01, "Preparando…");
+    openDialog(dlg);
+    try {
+      const out = await API.cutout(src, { onProgress: setEnhProgress, maxSide: LOGO_MAX });
+      state.brand.logoSrc = src;
+      state.brand.logo = out.dataURL;
+      state.brand.logoCutout = true;
+      persist(); updateLogoChrome(); renderFlyer();
+      closeDialog(dlg);
+      toast("Fundo do logo removido.");
+    } catch (e) {
+      console.error(e);
+      state.brand.logoCutout = false;
+      updateLogoChrome();
+      $("enh-fail-text").textContent = (e && e.message ? e.message : "Não deu para tirar o fundo.") + " Você pode usar o logo do jeito que está.";
+      showEnhPane("fail");
+    } finally {
+      logoAiBusy = false;
+    }
   }
 
   // ---------- product list ----------
@@ -686,7 +774,7 @@
     };
     const corners = stks.filter((s) => /^(tl|tr|bl|br)$/.test(s.pos)).map(stkNode).join("");
     const footStk = stks.filter((s) => String(s.pos).startsWith("footer")).map(stkNode).join("");
-    return `<header class="fl-head"><div class="fl-brand">${logoHTML(b)}${hideName ? "" : `<div><div class="fl-name">${esc(b.name || "Nome da sua loja")}</div>${b.slogan ? `<div class="fl-tag">${esc(b.slogan)}</div>` : ""}</div>`}</div>
+    return `<header class="fl-head"><div class="fl-brand">${logoHTML(b)}${hideName ? "" : `<div class="fl-brand-text"><div class="fl-name">${esc(b.name || "Nome da sua loja")}</div>${b.slogan ? `<div class="fl-tag">${esc(b.slogan)}</div>` : ""}</div>`}</div>
       <div class="fl-band"><h1 class="fl-title">${esc(f.title || "Ofertas da Semana")}</h1>${dates ? `<p class="fl-dates">${esc(dates)}</p>` : ""}</div></header>
       <div class="fl-body"><section class="fl-grid">${cards}</section>${corners}</div>
       <footer class="fl-foot">${footStk ? `<div class="fl-stk-foot">${footStk}</div>` : ""}${contacts.length ? `<div class="fl-contact">${contacts.join("")}</div>` : ""}${disc ? `<p class="fl-disc">${esc(disc)}</p>` : ""}</footer>`;
@@ -781,6 +869,7 @@
     onbSeg = state.onboarded ? state.segment : null;
     renderOnbSegs();
     $("onb-store").value = isPresetName(state.brand.name) ? "" : state.brand.name;
+    updateLogoChrome();
     showOnb(1); openDialog($("dlg-onboard"));
   }
   function validateOnbStep2() {
@@ -810,7 +899,7 @@
     const b = state.brand;
     if (opts.brand || b.preset !== "custom") {
       const keepName = opts.name || (isPresetName(b.name) ? "" : b.name);
-      state.brand = { ...brandFromPreset(k, b), logo: b.logo, logoOnly: b.logoOnly };
+      state.brand = { ...brandFromPreset(k, b), ...keepLogoFields(b) };
       if (keepName) state.brand.name = keepName;
     }
     const f = cur();
@@ -830,6 +919,10 @@
   // Se o navegador fechar a janela mesmo assim (Voltar do Android), reabre até terminar o primeiro acesso.
   $("dlg-onboard").addEventListener("close", () => { if (onbRequired()) setTimeout(() => { if (onbRequired()) { openDialog($("dlg-onboard")); showOnb(onbStep); } }, 0); });
   $("btn-help").addEventListener("click", startOnboarding);
+  $("dlg-enhance").addEventListener("close", () => {
+    $("dlg-enhance").classList.remove("is-logo");
+    if (logoAiTitle) $("dlg-enhance-title").textContent = logoAiTitle;
+  });
 
   // ---------- bindings ----------
   function bindForm() {
@@ -859,16 +952,17 @@
     el.preset.addEventListener("change", () => {
       const k = el.preset.value; if (!(k in PRESETS)) return;
       const prev = clone(state.brand);
-      state.brand = { ...brandFromPreset(k, state.brand), logo: state.brand.logo, logoOnly: state.brand.logoOnly };
+      state.brand = { ...brandFromPreset(k, state.brand), ...keepLogoFields(state.brand) };
       persist(); fillForm(); renderFlyer();
       toast(`Marca “${PRESETS[k].label}” aplicada.`, { undo: () => { state.brand = prev; persist(); fillForm(); renderFlyer(); } });
     });
-    el.logo.addEventListener("change", async (e) => {
+    const onLogoFile = async (e) => {
       const file = e.target.files?.[0]; e.target.value = ""; if (!file) return;
-      try { state.brand.logo = await shrinkLogo(file); persist(); updateLogoChrome(); renderFlyer(); } catch (err) { toast(err.message, { error: true }); }
-    });
-    el.logoClear.addEventListener("click", () => { const old = state.brand.logo; state.brand.logo = ""; state.brand.logoOnly = false; el.logoOnly.checked = false; persist(); updateLogoChrome(); renderFlyer();
-      toast("Logo removido.", { undo: () => { state.brand.logo = old; persist(); updateLogoChrome(); renderFlyer(); } }); });
+      try { await applyLogoFile(file); } catch (err) { toast(err.message, { error: true }); }
+    };
+    [el.logo, el.logoCam, $("onb-logo"), $("onb-logo-cam")].filter(Boolean).forEach((n) => n.addEventListener("change", onLogoFile));
+    [el.logoClear, $("onb-logo-clear")].filter(Boolean).forEach((n) => n.addEventListener("click", clearLogo));
+    [el.logoCutout, $("onb-logo-cutout")].filter(Boolean).forEach((n) => n.addEventListener("change", (e) => { setLogoCutout(e.target.checked); }));
 
     document.querySelectorAll('input[name="format"]').forEach((i) => i.addEventListener("change", () => { if (i.checked) { cur().format = i.value; persist(); renderFlyer(); } }));
     el.add.addEventListener("click", () => {
@@ -1004,7 +1098,7 @@
     window.addEventListener("resize", () => scalePreview());
     if (!state.onboarded) startOnboarding();
     if ("serviceWorker" in navigator && window.isSecureContext) navigator.serviceWorker.register("sw.js").catch(() => {});
-    window.__vitrine = { get state() { return state; }, renderPngBlob, renderFlyer, renderStickerUI, renderStickerGallery, openEnhance, openCrop, setStickerSet(s) { stkSet = s; renderStickerGallery(); } };
+    window.__vitrine = { get state() { return state; }, renderPngBlob, renderFlyer, renderStickerUI, renderStickerGallery, openEnhance, openCrop, applyLogoFile, shrinkLogo, updateLogoChrome, persist, fillForm, setStickerSet(s) { stkSet = s; renderStickerGallery(); } };
   }
   boot();
 })();

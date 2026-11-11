@@ -556,12 +556,80 @@
     };
   }
 
+  function composeCutout(work, seg, maxSide) {
+    const W = work.width, H = work.height;
+    const cl = cleanMask(seg.mask, seg.mw, seg.mh);
+    if (!cl) throw new Error("Não encontrei o logo na imagem. Tente uma foto com fundo mais simples.");
+    const kx = W / seg.mw, ky = H / seg.mh;
+    let bx0 = cl.box.x0 * kx, by0 = cl.box.y0 * ky, bx1 = (cl.box.x1 + 1) * kx, by1 = (cl.box.y1 + 1) * ky;
+    const pad = Math.max(bx1 - bx0, by1 - by0) * 0.08;
+    const sx = Math.max(0, Math.floor(bx0 - pad)), sy = Math.max(0, Math.floor(by0 - pad));
+    const sw = Math.min(W, Math.ceil(bx1 + pad)) - sx, sh = Math.min(H, Math.ceil(by1 + pad)) - sy;
+    const fit = Math.min(1, (maxSide || 512) / Math.max(sw, sh));
+    const dw = Math.max(8, Math.round(sw * fit)), dh = Math.max(8, Math.round(sh * fit));
+    const cut = resizeHQ(work, sx, sy, sw, sh, dw, dh);
+    const cctx = ctx2d(cut);
+    const img = cctx.getImageData(0, 0, dw, dh);
+    const coarse = upsample(cl.mask, seg.mw, seg.mh, sx, sy, sw, sh, W, H, dw, dh);
+    const alpha = refineAlpha(img.data, coarse, dw, dh);
+    decontaminate(img.data, alpha, dw, dh);
+    for (let i = 0; i < dw * dh; i++) img.data[i * 4 + 3] = Math.round(alpha[i] * 255);
+    cctx.putImageData(img, 0, 0);
+    let x0 = dw, y0 = dh, x1 = 0, y1 = 0;
+    const a = img.data;
+    for (let y = 0; y < dh; y++) for (let x = 0; x < dw; x++) {
+      if (a[(y * dw + x) * 4 + 3] > 10) { if (x < x0) x0 = x; if (y < y0) y0 = y; if (x > x1) x1 = x; if (y > y1) y1 = y; }
+    }
+    if (x1 < x0) return cut;
+    const p2 = Math.max(2, Math.round(Math.max(x1 - x0 + 1, y1 - y0 + 1) * 0.04));
+    x0 = Math.max(0, x0 - p2); y0 = Math.max(0, y0 - p2);
+    x1 = Math.min(dw - 1, x1 + p2); y1 = Math.min(dh - 1, y1 + p2);
+    const cw = x1 - x0 + 1, ch = y1 - y0 + 1;
+    const out = canvas(cw, ch);
+    ctx2d(out).drawImage(cut, x0, y0, cw, ch, 0, 0, cw, ch);
+    return out;
+  }
+
+  async function cutout(src, opts = {}) {
+    const onProgress = opts.onProgress;
+    if (!supported()) throw new Error("Este aparelho não suporta o processamento com IA.");
+    report(onProgress, 0.01, "Lendo o logo…");
+    const img = typeof src === "string" ? await loadImg(src) : src;
+    const work = toWorking(img);
+    let key = (typeof src === "string" ? src.length + ":" + src.slice(-64) : "") + ":" + work.width + "x" + work.height;
+    const choice = pickEngine(opts.engine);
+    if (opts.res) choice.res = opts.res;
+    const dims = work.width + "x" + work.height;
+    key += ":cut:" + choice.engine + choice.res;
+    let seg = lastSeg && lastSeg.key === key ? lastSeg : null;
+    if (!seg) {
+      try {
+        seg = await segment(choice.engine, choice.res, work, onProgress, opts.timeout);
+      } catch (e) {
+        if (choice.engine !== "isnet") throw e;
+        console.warn("IS-Net falhou, usando o modo leve", e);
+        report(onProgress, 0.1, "Usando a IA leve neste aparelho…");
+        seg = await segment("u2netp", 320, work, onProgress, opts.timeout);
+        seg.fallback = true;
+      }
+      seg.key = key; seg.dims = dims;
+      lastSeg = seg;
+    }
+    report(onProgress, 0.9, "Recortando o logo…");
+    await new Promise((r) => setTimeout(r, 0));
+    const t1 = now();
+    const out = composeCutout(work, seg, opts.maxSide || 512);
+    report(onProgress, 1, "Pronto");
+    return { canvas: out, dataURL: out.toDataURL("image/png"), engine: seg.engine, fallback: !!seg.fallback, inferMs: seg.ms, postMs: now() - t1 };
+  }
+
   window.VitrineEnhance = {
     supported,
     sizes: { isnet: MODELS.isnet.bytes, u2netp: MODELS.u2netp.bytes, wasm: WASM_BYTES, js: ORT_JS_BYTES },
     model: { name: "IS-Net (DIS) 8 bits + U²-Net u2netp (reserva)", license: "Apache-2.0", runtime: "ONNX Runtime Web 1.17.3 (MIT)" },
     ensureLoaded,
     enhance,
+    cutout,
     pickEngine,
     isWeak() {
       if (!supported()) return "unsupported";
