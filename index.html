@@ -3,26 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#D61E26">
+  <meta name="theme-color" content="#1C3FAA">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="Gerador de encartes de promoção das Drogarias Ônix. Monte ofertas, exporte em PNG ou imprima em A4.">
-  <title>Encartes Ônix — Gerador de promoções</title>
+  <meta name="apple-mobile-web-app-title" content="Vitrine">
+  <meta name="author" content="Nextwave Studio Brasil">
+  <meta name="description" content="Vitrine de Ofertas: crie encartes de promoção para farmácias e lojas no celular. Story, Feed e A4, grátis e sem cadastro.">
+  <title>Vitrine de Ofertas — encartes de promoção</title>
   <link rel="icon" type="image/png" href="icons/favicon.png">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
   <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preload" href="fonts/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/oswald-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="fonts/fonts.css">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+  <a class="skip" href="#editor">Pular para o editor</a>
   <header class="topbar">
     <div class="topbar-brand">
-      <img src="icons/mark.png" alt="" width="32" height="32">
+      <img src="icons/icon-192.png" alt="" width="34" height="34">
       <div>
-        <strong>Drogarias Ônix</strong>
-        <span>Gerador de encartes</span>
+        <strong>Vitrine de Ofertas</strong>
+        <span id="current-flyer-name">Meu encarte</span>
       </div>
+    </div>
+    <div class="topbar-actions">
+      <button type="button" class="top-btn" id="btn-flyers" aria-haspopup="dialog">Meus encartes</button>
+      <button type="button" class="top-btn round" id="btn-help" aria-label="Ajuda e dicas">?</button>
     </div>
   </header>
 
@@ -30,33 +38,28 @@
     <section class="preview-col" aria-label="Prévia do encarte">
       <div class="preview-toolbar">
         <h2>Prévia</h2>
-        <button type="button" class="btn-text" id="btn-fullscreen" aria-label="Ver encarte em tela cheia">Ampliar</button>
+        <button type="button" class="btn-text" id="btn-fullscreen">Ampliar</button>
       </div>
       <div class="preview-frame" id="preview-frame">
         <div class="flyer-scale" id="flyer-scale">
-          <article class="flyer" id="flyer" data-theme="classico" data-format="story" data-cols="2" data-density="comfortable" data-count="6"></article>
+          <article class="flyer" id="flyer" aria-label="Encarte"></article>
         </div>
       </div>
     </section>
 
-    <section class="editor-col" aria-label="Editor do encarte">
+    <section class="editor-col" id="editor" aria-label="Editor do encarte">
       <div class="panel">
-        <h2>Formato</h2>
-        <div class="seg" role="radiogroup" aria-label="Formato do encarte" id="format-group">
-          <label class="seg-item"><input type="radio" name="format" value="story" checked> Story / Status<br><small>9:16 · 1080×1920</small></label>
-          <label class="seg-item"><input type="radio" name="format" value="feed"> Feed<br><small>1:1 · 1080×1080</small></label>
-          <label class="seg-item"><input type="radio" name="format" value="a4"> A4 impressão<br><small>Retrato · PDF</small></label>
+        <h2 id="h-format">Formato</h2>
+        <div class="seg" role="radiogroup" aria-labelledby="h-format" id="format-group">
+          <label class="seg-item"><input type="radio" name="format" value="story"> Story / Status<small>9:16 · 1080×1920</small></label>
+          <label class="seg-item"><input type="radio" name="format" value="feed"> Feed<small>1:1 · 1080×1080</small></label>
+          <label class="seg-item"><input type="radio" name="format" value="a4"> A4<small>Impressão · PDF</small></label>
         </div>
       </div>
 
       <div class="panel">
-        <h2>Tema</h2>
-        <div class="theme-grid" role="radiogroup" aria-label="Tema visual" id="theme-group">
-          <label class="theme-swatch t-classico"><input type="radio" name="theme" value="classico" checked> Clássico Ônix</label>
-          <label class="theme-swatch t-relampago"><input type="radio" name="theme" value="relampago"> Relâmpago</label>
-          <label class="theme-swatch t-clean"><input type="radio" name="theme" value="clean"> Farmácia clean</label>
-          <label class="theme-swatch t-noite"><input type="radio" name="theme" value="noite"> Noite Ônix</label>
-        </div>
+        <h2 id="h-theme">Modelo</h2>
+        <div class="theme-grid" role="radiogroup" aria-labelledby="h-theme" id="theme-group"></div>
       </div>
 
       <div class="panel">
@@ -64,6 +67,7 @@
         <label class="field">Título
           <input type="text" id="fld-title" maxlength="60" placeholder="Ofertas da Semana">
         </label>
+        <div class="chips" id="title-chips" aria-label="Sugestões de título"></div>
         <div class="row-2">
           <label class="field">Válidas de
             <input type="date" id="fld-from">
@@ -71,6 +75,56 @@
           <label class="field">até
             <input type="date" id="fld-to">
           </label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Produtos <span class="muted" id="product-count">(0/12)</span></h2>
+        </div>
+        <div id="product-list" class="product-list"></div>
+        <div class="empty-products" id="empty-products" hidden>
+          <div class="empty-ico" aria-hidden="true">🛒</div>
+          <p><strong>Nenhum produto ainda.</strong><br>Adicione o primeiro item da sua oferta.</p>
+        </div>
+        <button type="button" class="btn-secondary btn-block" id="btn-add">+ Adicionar produto</button>
+        <p class="hint">Arraste pela alça ⠿ para mudar a ordem. Toque na foto para enviar, cortar ou deixar o fundo branco.</p>
+      </div>
+
+      <div class="panel">
+        <h2>Sua loja</h2>
+        <label class="field">Modelo de marca
+          <select id="fld-preset"></select>
+        </label>
+        <label class="field">Nome da loja
+          <input type="text" id="fld-store" maxlength="40" placeholder="Nome da sua loja">
+        </label>
+        <label class="field">Slogan (opcional)
+          <input type="text" id="fld-slogan" maxlength="60" placeholder="ex.: Saúde com preço justo">
+        </label>
+        <div class="colors">
+          <label class="color-field">Cor principal<input type="color" id="fld-c1"></label>
+          <label class="color-field">Cor secundária<input type="color" id="fld-c2"></label>
+          <label class="color-field">Destaque<input type="color" id="fld-c3"></label>
+        </div>
+        <div class="logo-row">
+          <div class="logo-preview" id="logo-preview" aria-hidden="true"></div>
+          <div class="logo-actions">
+            <label class="btn-secondary file-btn">Enviar logo
+              <input type="file" id="fld-logo" accept="image/*">
+            </label>
+            <button type="button" class="btn-text" id="btn-logo-clear" hidden>Remover logo</button>
+            <label class="field compact">Sem logo, mostrar
+              <select id="fld-mark">
+                <option value="cruz">Cruz de farmácia</option>
+                <option value="inicial">Inicial do nome</option>
+                <option value="nenhum">Nada</option>
+              </select>
+            </label>
+            <label class="chk" id="logo-only-wrap" hidden>
+              <input type="checkbox" id="fld-logo-only"> Usar só o logo (ocultar o nome)
+            </label>
+          </div>
         </div>
         <label class="field">Endereço
           <input type="text" id="fld-address" maxlength="140" placeholder="Rua, número — Bairro, Cidade">
@@ -83,51 +137,31 @@
             <input type="text" id="fld-instagram" maxlength="40" placeholder="@sua_loja" autocapitalize="off">
           </label>
         </div>
-        <div class="logo-row">
-          <div class="logo-preview" id="logo-preview">
-            <img src="icons/mark.png" alt="Marca padrão (cruz branca)" id="logo-img">
-          </div>
-          <div class="logo-actions">
-            <label class="btn-secondary file-btn">Enviar logo
-              <input type="file" id="fld-logo" accept="image/*">
-            </label>
-            <button type="button" class="btn-text" id="btn-logo-clear" hidden>Remover logo</button>
-            <label class="chk" id="logo-only-wrap" hidden>
-              <input type="checkbox" id="fld-logo-only"> Usar só o logo (ocultar o nome)
-            </label>
-          </div>
-        </div>
+        <p class="hint">Os dados da loja valem para todos os seus encartes.</p>
       </div>
 
       <div class="panel">
-        <div class="panel-head">
-          <h2>Produtos <span class="muted" id="product-count">(0/12)</span></h2>
-        </div>
-        <div id="product-list" class="product-list"></div>
-        <button type="button" class="btn-secondary btn-block" id="btn-add">+ Adicionar produto</button>
-        <p class="hint">Toque na foto para enviar da galeria ou da câmera. Máximo de 12 produtos.</p>
-      </div>
-
-      <div class="panel">
-        <h2>Aviso legal (rodapé)</h2>
-        <label class="field">
+        <h2>Aviso no rodapé</h2>
+        <label class="field"><span class="sr-only">Texto do aviso</span>
           <textarea id="fld-disclaimer" rows="4" maxlength="500"></textarea>
         </label>
+        <button type="button" class="btn-text" id="btn-disc-reset">Restaurar texto padrão</button>
       </div>
 
       <div class="panel">
-        <h2>Dados e backup</h2>
+        <h2>Backup</h2>
         <div class="btn-row">
-          <button type="button" class="btn-secondary" id="btn-export-json">Exportar JSON</button>
-          <label class="btn-secondary file-btn">Importar JSON
+          <button type="button" class="btn-secondary" id="btn-export-json">Exportar backup</button>
+          <label class="btn-secondary file-btn">Importar backup
             <input type="file" id="fld-import-json" accept="application/json,.json">
           </label>
         </div>
-        <div class="btn-row">
-          <button type="button" class="btn-text" id="btn-sample">Carregar exemplo</button>
-          <button type="button" class="btn-text danger" id="btn-clear">Limpar tudo</button>
-        </div>
-        <p class="hint">O encarte fica salvo neste celular. O backup JSON leva textos, preços e fotos compactadas.</p>
+        <p class="hint">Tudo fica salvo só neste aparelho; nada é enviado para servidores. Faça backup antes de trocar de celular. <a href="privacidade.html">Política de privacidade</a></p>
+      </div>
+
+      <div class="panel about" id="sobre">
+        <h2>Sobre</h2>
+        <p class="hint"><strong>Vitrine de Ofertas</strong> v2.0 · Desenvolvido por <strong>Nextwave Studio Brasil</strong>.<br>Grátis, sem cadastro e sem anúncios. Seus dados ficam só no seu aparelho.<br>A marca “Drogarias Ônix” é um modelo pronto; troque pelo nome e cores da sua loja em “Sua loja”.</p>
       </div>
     </section>
   </main>
@@ -138,14 +172,82 @@
     <button type="button" class="btn-secondary" id="btn-print">Imprimir / PDF</button>
   </div>
 
-  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+    <span id="toast-text"></span>
+    <button type="button" class="toast-undo" id="toast-undo" hidden>Desfazer</button>
+  </div>
 
   <div class="fs-overlay" id="fs-overlay" hidden>
     <button type="button" class="fs-close" id="btn-fs-close">Fechar</button>
     <div class="fs-inner" id="fs-inner"></div>
   </div>
 
-  <script src="js/html-to-image.min.js"></script>
-  <script src="js/app.js"></script>
+  <dialog class="modal" id="dlg-flyers" aria-labelledby="dlg-flyers-title">
+    <div class="modal-head">
+      <h2 id="dlg-flyers-title">Meus encartes</h2>
+      <button type="button" class="modal-x" data-close aria-label="Fechar">×</button>
+    </div>
+    <div id="flyer-list" class="flyer-list"></div>
+    <div class="btn-row">
+      <button type="button" class="btn-primary" id="btn-new-flyer">+ Novo encarte</button>
+      <button type="button" class="btn-secondary" id="btn-dup-flyer">Duplicar atual</button>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="dlg-photo" aria-labelledby="dlg-photo-title">
+    <div class="modal-head">
+      <h2 id="dlg-photo-title">Ajustar foto</h2>
+      <button type="button" class="modal-x" data-close aria-label="Fechar">×</button>
+    </div>
+    <canvas id="crop-canvas" width="600" height="600" aria-label="Arraste para posicionar a foto"></canvas>
+    <label class="field">Zoom
+      <input type="range" id="crop-zoom" min="0.3" max="4" step="0.01" value="1">
+    </label>
+    <label class="chk"><input type="checkbox" id="crop-white" checked> Fundo branco</label>
+    <label class="chk"><input type="checkbox" id="crop-clean"> Clarear fundo quase branco (embalagem fotografada)</label>
+    <div class="btn-row">
+      <button type="button" class="btn-secondary" id="crop-fit">Encaixar</button>
+      <button type="button" class="btn-primary" id="crop-apply">Usar foto</button>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="dlg-onboard" aria-labelledby="dlg-onboard-title">
+    <div class="onb" data-step="1">
+      <div class="onb-art" aria-hidden="true">🏷️</div>
+      <h2 id="dlg-onboard-title">Bem-vindo à Vitrine de Ofertas</h2>
+      <p>Monte encartes de promoção em minutos, direto no celular. Grátis, sem cadastro, e tudo fica salvo só no seu aparelho.</p>
+      <p class="hint">Um app da Nextwave Studio Brasil</p>
+    </div>
+    <div class="onb" data-step="2" hidden>
+      <div class="onb-art" aria-hidden="true">🏪</div>
+      <h2>Qual é a sua loja?</h2>
+      <label class="field">Nome da loja
+        <input type="text" id="onb-store" maxlength="40" placeholder="ex.: Farmácia Central">
+      </label>
+      <label class="field">Começar com a marca
+        <select id="onb-preset"></select>
+      </label>
+      <p class="hint">Dá para trocar nome, cores, logo e slogan depois, em “Sua loja”.</p>
+    </div>
+    <div class="onb" data-step="3" hidden>
+      <div class="onb-art" aria-hidden="true">✨</div>
+      <h2>Dicas rápidas</h2>
+      <ul class="tips">
+        <li>Preencha <strong>de</strong> e <strong>por</strong>: o desconto em % aparece sozinho.</li>
+        <li>Toque na foto do produto para cortar e deixar o fundo branco.</li>
+        <li>Use <strong>Story</strong> para Status do WhatsApp e <strong>A4</strong> para imprimir.</li>
+        <li>Em <strong>Meus encartes</strong> você duplica a oferta da semana passada.</li>
+      </ul>
+    </div>
+    <div class="onb-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="btn-row onb-nav">
+      <button type="button" class="btn-text" id="onb-skip">Pular</button>
+      <button type="button" class="btn-primary" id="onb-next">Continuar</button>
+    </div>
+  </dialog>
+
+  <script src="js/html-to-image.min.js" defer></script>
+  <script src="js/sortable.min.js" defer></script>
+  <script src="js/app.js" defer></script>
 </body>
 </html>

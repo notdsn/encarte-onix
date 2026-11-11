@@ -1,15 +1,20 @@
 {
-  "name": "Encartes Ônix",
-  "short_name": "Encartes Ônix",
-  "description": "Gerador de encartes de promoção das Drogarias Ônix",
-  "start_url": "./",
-  "scope": "./",
+  "id": "/encarte-onix/",
+  "name": "Vitrine de Ofertas — encartes de promoção",
+  "short_name": "Vitrine",
+  "description": "Crie encartes de promoção para farmácias e lojas: Story, Feed e A4, direto no celular. Por Nextwave Studio Brasil.",
+  "start_url": "/encarte-onix/",
+  "scope": "/encarte-onix/",
   "display": "standalone",
-  "background_color": "#D61E26",
-  "theme_color": "#D61E26",
+  "orientation": "portrait",
+  "background_color": "#1C3FAA",
+  "theme_color": "#1C3FAA",
   "lang": "pt-BR",
+  "categories": ["business", "productivity"],
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
