@@ -17,7 +17,18 @@ Avisos de terceiros — Vitrine de Ofertas (Nextwave Studio Brasil)
    O código do rembg é MIT (Copyright Daniel Gatis) e não reliceia os pesos.
    Textos de licença: ai/licenses/
 
-2) ONNX Runtime Web 1.17.3
+2) IS-Net / DIS — isnet-general-use (recorte principal)
+   Autores: Xuebin Qin, Hang Dai, Xiaobin Hu, Deng-Ping Fan, Ling Shao
+   e Luc Van Gool. Artigo: “Highly Accurate Dichotomous Image
+   Segmentation.” ECCV 2022. https://arxiv.org/abs/2203.03041
+   Repositório e licença: https://github.com/xuebinqin/DIS
+   Licença: Apache License 2.0
+   O arquivo isnet-u8.onnx é derivado do isnet-general-use.onnx
+   distribuído em https://github.com/danielgatis/rembg/releases/download/v0.0.0/isnet-general-use.onnx
+   (modificações: saída única, entrada com tamanho dinâmico e pesos
+   quantizados em 8 bits — ver ai/README.md).
+
+3) ONNX Runtime Web 1.17.3
    Copyright (c) Microsoft Corporation.
    Licença: MIT
    https://github.com/microsoft/onnxruntime

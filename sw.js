@@ -1,7 +1,7 @@
-const CACHE = "vitrine-v2.2.0";
+const CACHE = "vitrine-v2.2.1";
 const ASSETS = ["./", "index.html", "privacidade.html", "css/styles.css", "fonts/fonts.css",
   "fonts/nunito-latin.woff2", "fonts/nunito-latin-ext.woff2", "fonts/oswald-latin.woff2", "fonts/oswald-latin-ext.woff2", "fonts/jakarta-latin.woff2", "fonts/jakarta-latin-ext.woff2",
-  "js/app.js", "js/stickers.js", "js/stickers3d.js", "js/enhance.js", "js/html-to-image.min.js", "js/sortable.min.js", "manifest.webmanifest",
+  "js/app.js", "js/stickers.js", "js/stickers3d.js", "js/segments.js", "js/enhance.js", "js/html-to-image.min.js", "js/sortable.min.js", "manifest.webmanifest",
   "stickers/3d/motoboy.webp", "stickers/3d/farmaceutico.webp", "stickers/3d/carrinho.webp", "stickers/3d/sacola.webp",
   "stickers/3d/presente.webp", "stickers/3d/megafone.webp", "stickers/3d/mascote.webp", "stickers/3d/fogo.webp",
   "stickers/3d/relogio.webp", "stickers/3d/etiqueta.webp", "stickers/3d/coracao.webp", "stickers/3d/local.webp",

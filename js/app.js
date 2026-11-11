@@ -5,24 +5,19 @@
   const LEGACY_KEY = "encarte-onix-v1";
   const LS_KEY = "vitrine-ofertas-v2";
   const MAX_PRODUCTS = 12;
-  const DEFAULT_DISCLAIMER =
-    "Imagens ilustrativas. Ofertas válidas enquanto durarem os estoques. Consulte o farmacêutico. Medicamentos podem causar efeitos adversos: leia a bula e, quando exigido, apresente a receita.";
-  const GENERIC_DISCLAIMER = "Imagens ilustrativas. Ofertas válidas enquanto durarem os estoques ou no período indicado.";
-
-  const PRESETS = {
-    onix: { label: "Drogarias Ônix", name: "Drogarias Ônix", slogan: "Cuidar de você é com a gente", c1: "#D61E26", c2: "#1C3FAA", c3: "#FFD600", mark: "cruz", disclaimer: DEFAULT_DISCLAIMER },
-    farmacia: { label: "Farmácia (genérico)", name: "Minha Farmácia", slogan: "Saúde com preço justo", c1: "#0E8A6A", c2: "#2A7DE1", c3: "#FFCF3A", mark: "cruz", disclaimer: DEFAULT_DISCLAIMER },
-    mercado: { label: "Mercado / loja", name: "Minha Loja", slogan: "Economia todo dia", c1: "#E4572E", c2: "#17324D", c3: "#FFC914", mark: "inicial", disclaimer: GENERIC_DISCLAIMER },
-    beleza: { label: "Perfumaria / beleza", name: "Minha Perfumaria", slogan: "Beleza que cabe no bolso", c1: "#D63384", c2: "#7B2D8B", c3: "#FFD6EA", mark: "inicial", disclaimer: GENERIC_DISCLAIMER },
-  };
+  const SEGS = window.SEGMENTS, SEG_ORDER = window.SEGMENT_ORDER;
+  const DEFAULT_SEGMENT = "farmacia";
+  // Modelos de marca: um pronto de exemplo (Drogarias Ônix) + um genérico para cada tipo de negócio.
+  const PRESETS = { onix: { label: "Drogarias Ônix (exemplo de farmácia)", name: "Drogarias Ônix", slogan: "Cuidar de você é com a gente", c1: "#D61E26", c2: "#1C3FAA", c3: "#FFD600", mark: "cruz", segment: "farmacia" } };
+  SEG_ORDER.forEach((k) => { PRESETS[k] = { label: SEGS[k].label + " (genérico)", ...SEGS[k].brand, segment: k }; });
 
   const THEMES = [
     { id: "classico", label: "Clássico", sw: ["var(--c1)", "#f3f4f8", "#102054"] },
     { id: "relampago", label: "Relâmpago", sw: ["var(--c1)", "var(--c1)", "var(--c3)"] },
     { id: "clean", label: "Clean", sw: ["#fff", "#f6f7fb", "#f0f2f8"] },
     { id: "noite", label: "Noite", sw: ["#0b1638", "#15244f", "#070f28"] },
-    { id: "saude", label: "Saúde (verde)", sw: ["#0e8a6a", "#eaf7f2", "#0b3b30"] },
-    { id: "beleza", label: "Beleza (rosa)", sw: ["#d63384", "#fdf0f6", "#4a1d4f"] },
+    { id: "saude", label: "Verde", sw: ["#0e8a6a", "#eaf7f2", "#0b3b30"] },
+    { id: "beleza", label: "Rosa", sw: ["#d63384", "#fdf0f6", "#4a1d4f"] },
     { id: "black", label: "Black Friday", sw: ["#0d0d0d", "#1c1c1c", "#f5c400"] },
     { id: "natal", label: "Natal", sw: ["#b3121f", "#fbf6ee", "#116b3a"] },
     { id: "gradiente", label: "Gradiente", sw: ["linear-gradient(135deg,var(--c1),var(--c2))", "#fff", "var(--c3)"], novo: true },
@@ -30,8 +25,7 @@
     { id: "neon", label: "Neon Sale", sw: ["#0a0420", "#ff2bd6", "#00f0ff"], novo: true },
   ];
 
-  const TITLE_SUGGESTIONS = ["Ofertas da Semana", "Ofertas do Mês", "Só Hoje!", "Black Friday", "Dia das Mães", "Saldão", "Ofertas de Natal"];
-  const BADGES = ["Oferta", "Novidade", "Mais vendido", "Leve 2 pague 1", "Leve 3 pague 2", "Limite por cliente"];
+  const SEG = () => window.segmentOf(state && state.segment);
   const FORMAT_SIZE = { story: { w: 1080, h: 1920 }, feed: { w: 1080, h: 1080 }, a4: { w: 1240, h: 1754 } };
   const MAX_STICKERS = 8;
   const STK_POS = [
@@ -114,28 +108,29 @@
   // ---------- model ----------
   function brandFromPreset(key, keep) {
     const p = PRESETS[key] || PRESETS.onix;
-    return { preset: key, name: p.name, slogan: p.slogan, c1: p.c1, c2: p.c2, c3: p.c3, mark: p.mark, logo: "", logoOnly: false,
+    return { preset: PRESETS[key] ? key : "onix", name: p.name, slogan: p.slogan, c1: p.c1, c2: p.c2, c3: p.c3, mark: p.mark, logo: "", logoOnly: false,
       address: keep?.address || "", whatsapp: keep?.whatsapp || "", instagram: keep?.instagram || "" };
   }
-  function sampleProducts() {
-    const mk = (name, details, o, n, badge = "") => ({ id: uid(), name, details, oldPrice: o, newPrice: n, photo: "", badge });
-    return [
-      mk("Vitamina C 1g", "caixa com 30 comprimidos", 24.9, 16.9),
-      mk("Protetor Solar FPS 60", "frasco 120 ml", 79.9, 54.9, "Oferta"),
-      mk("Fralda geriátrica G", "pacote com 30 unidades", 69.9, 49.9, "Leve 3 pague 2"),
-      mk("Shampoo antiqueda", "frasco 300 ml", 39.9, 27.9),
-    ];
+  function sampleProducts(segId) {
+    return window.segmentOf(segId).products.map(([name, details, o, n, badge = ""]) => ({ id: uid(), name, details, oldPrice: o, newPrice: n, photo: "", photoSrc: "", badge }));
   }
-  function newFlyer(name, withSample) {
+  function sampleContent(segId) {
+    const seg = window.segmentOf(segId);
+    return { theme: seg.theme, title: seg.titles[0], sampleSeg: seg.id, products: sampleProducts(seg.id),
+      stickers: seg.stickers.map(([kind, pos, size, caption]) => ({ id: uid("s"), kind, pos, size, caption })) };
+  }
+  // O encarte de exemplo ainda não foi mexido? (mesmos nomes de produto do exemplo)
+  function isUntouchedSample(f) {
+    if (!f) return false;
+    const names = window.segmentOf(f.sampleSeg || DEFAULT_SEGMENT).products.map((p) => p[0]).join("|");
+    return f.products.map((p) => p.name).join("|") === names && f.products.every((p) => !p.photo);
+  }
+  function newFlyer(name, withSample, segId) {
     const from = todayISO();
-    return { id: uid("f"), name: name || "Encarte " + formatDateBR(from), updatedAt: Date.now(), theme: "classico", format: "story",
-      title: "Ofertas da Semana", dateFrom: from, dateTo: addDaysISO(from, 6), disclaimer: null,
-      products: withSample ? sampleProducts() : [],
-      stickers: withSample ? [
-        { id: uid("s"), kind: "3d-motoboy", pos: "footer-left", size: "m", caption: "Entregamos em casa!" },
-        { id: uid("s"), kind: "3d-relogio", pos: "tl", size: "s", caption: "Só hoje" },
-        { id: uid("s"), kind: "3d-fogo", pos: "tr", size: "s", caption: "Imperdível" },
-      ] : [] };
+    const seg = window.segmentOf(segId || (state && state.segment));
+    const f = { id: uid("f"), name: name || "Encarte " + formatDateBR(from), updatedAt: Date.now(), theme: seg.theme, format: "story",
+      title: seg.titles[0], dateFrom: from, dateTo: addDaysISO(from, 6), disclaimer: null, products: [], stickers: [] };
+    return withSample ? Object.assign(f, sampleContent(seg.id)) : f;
   }
   function normSticker(s) {
     const known = window.stickerInfo ? window.stickerInfo(s.kind) : (window.STICKERS || {})[s.kind];
@@ -151,14 +146,16 @@
   }
   function normProduct(p) {
     return { id: p.id || uid(), name: p.name || "", details: p.details || "", oldPrice: p.oldPrice == null || p.oldPrice === "" ? null : Number(p.oldPrice),
-      newPrice: p.newPrice == null || p.newPrice === "" ? null : Number(p.newPrice), photo: p.photo || "", badge: p.badge || "" };
+      newPrice: p.newPrice == null || p.newPrice === "" ? null : Number(p.newPrice), photo: p.photo || "", photoSrc: p.photoSrc || "", badge: p.badge || "" };
   }
   function normalize(s) {
     const st = s && typeof s === "object" ? s : {};
-    st.version = 2;
+    st.version = 3;
+    // migração: quem já usava o app era de farmácia (ou escolheu a marca de mercado/beleza)
+    if (!SEGS[st.segment]) st.segment = st.brand && SEGS[st.brand.preset] ? st.brand.preset : DEFAULT_SEGMENT;
     st.brand = { ...brandFromPreset("onix"), ...(st.brand || {}) };
-    if (!Array.isArray(st.flyers) || !st.flyers.length) st.flyers = [newFlyer("Meu primeiro encarte", true)];
-    st.flyers = st.flyers.map((f) => ({ ...newFlyer(), ...f, products: (f.products || []).slice(0, MAX_PRODUCTS).map(normProduct), stickers: (f.stickers || []).slice(0, MAX_STICKERS).map(normSticker) }));
+    if (!Array.isArray(st.flyers) || !st.flyers.length) st.flyers = [newFlyer("Meu primeiro encarte", true, st.segment)];
+    st.flyers = st.flyers.map((f) => ({ ...newFlyer(null, false, st.segment), ...f, products: (f.products || []).slice(0, MAX_PRODUCTS).map(normProduct), stickers: (f.stickers || []).slice(0, MAX_STICKERS).map(normSticker) }));
     if (!st.flyers.some((f) => f.id === st.currentId)) st.currentId = st.flyers[0].id;
     st.onboarded = !!st.onboarded;
     return st;
@@ -169,11 +166,12 @@
       if (!raw) return null;
       const o = JSON.parse(raw);
       const brand = brandFromPreset("onix", o);
+      brand.segment = undefined;
       if (o.logo) { brand.logo = o.logo; brand.logoOnly = !!o.logoOnly; }
       const f = newFlyer("Encarte Ônix");
       Object.assign(f, { theme: ["classico", "relampago", "clean", "noite"].includes(o.theme) ? o.theme : "classico", format: o.format || "story",
         title: o.title || f.title, dateFrom: o.dateFrom || f.dateFrom, dateTo: o.dateTo || f.dateTo, disclaimer: o.disclaimer || null, products: o.products || [] });
-      return { brand, flyers: [f], currentId: f.id, onboarded: true };
+      return { brand, segment: "farmacia", flyers: [f], currentId: f.id, onboarded: true };
     } catch { return null; }
   }
 
@@ -211,8 +209,20 @@
     return c.toDataURL("image/png");
   }
 
+  // Guarda a foto original (até 2048 px) para a IA trabalhar com qualidade, não com o recorte pequeno.
+  async function keepOriginal(dataURL) {
+    try {
+      const img = await loadImg(dataURL);
+      const s = Math.min(1, 2048 / Math.max(img.width, img.height));
+      if (s === 1 && dataURL.length < 2.5e6) return dataURL;
+      const c = document.createElement("canvas"); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      const x = c.getContext("2d"); x.imageSmoothingQuality = "high"; x.drawImage(img, 0, 0, c.width, c.height);
+      return c.toDataURL("image/jpeg", 0.92);
+    } catch { return ""; }
+  }
+
   // ---------- photo crop dialog ----------
-  const crop = { img: null, zoom: 1, x: 0, y: 0, pid: null };
+  const crop = { img: null, zoom: 1, x: 0, y: 0, pid: null, orig: "" };
   const cv = $("crop-canvas"), cx = cv.getContext("2d");
   function drawCrop(target, size) {
     const ctx = target ? target.getContext("2d") : cx; const S = size || cv.width;
@@ -233,7 +243,9 @@
     try {
       const fromFile = file && typeof File !== "undefined" && file instanceof File;
       const url = src || (typeof file === "string" ? file : null);
-      crop.img = await loadImg(fromFile ? await fileToDataURL(file) : (url || productById(pid).photo));
+      const raw = fromFile ? await fileToDataURL(file) : null;
+      crop.orig = raw ? await keepOriginal(raw) : "";
+      crop.img = await loadImg(crop.orig || raw || url || productById(pid).photo);
       crop.pid = pid;
       const zr = $("crop-zoom"); const base = Math.min(cv.width / crop.img.width, cv.height / crop.img.height);
       zr.min = (base * 0.4).toFixed(3); zr.max = (base * 5).toFixed(3); zr.step = (base / 100).toFixed(4);
@@ -251,9 +263,13 @@
     $("crop-clean").addEventListener("change", () => drawCrop());
     $("crop-fit").addEventListener("click", fitCrop);
     $("crop-apply").addEventListener("click", () => {
-      const out = document.createElement("canvas"); out.width = out.height = 800; drawCrop(out, 800);
+      const out = document.createElement("canvas"); out.width = out.height = 1200; out.getContext("2d").imageSmoothingQuality = "high"; drawCrop(out, 1200);
       const p = productById(crop.pid);
-      if (p) { p.photo = $("crop-white").checked ? out.toDataURL("image/jpeg", 0.85) : out.toDataURL("image/png"); persist(); renderProductList(); renderFlyer(); }
+      if (p) {
+        p.photo = $("crop-white").checked ? out.toDataURL("image/jpeg", 0.92) : out.toDataURL("image/png");
+        if (crop.orig) p.photoSrc = crop.orig;
+        persist(); renderProductList(); renderFlyer();
+      }
       closeDialog($("dlg-photo"));
     });
   })();
@@ -272,6 +288,7 @@
   async function srcForProduct(pid, file) {
     if (file) return typeof file === "string" ? file : await fileToDataURL(file);
     const p = productById(pid);
+    if (p?.photoSrc) return p.photoSrc;
     if (p?.photo) return p.photo;
     return null;
   }
@@ -311,6 +328,7 @@
         onProgress: setEnhProgress,
       });
       enh.after = out.dataURL;
+      if (out.original) enh.before = out.original;
       $("enh-before").src = enh.before;
       $("enh-after").src = enh.after;
       showEnhPane("result");
@@ -330,7 +348,7 @@
       const out = await API.enhance(enh.before, {
         background: $("enh-tint").checked ? "tint" : "white",
         tint: safeColor(state.brand.c1, "#D61E26"),
-        onProgress: setEnhProgress,
+        onProgress: setEnhProgress, reuse: true,
       });
       enh.after = out.dataURL;
       $("enh-after").src = enh.after;
@@ -343,11 +361,12 @@
   function applyEnhance() {
     const p = productById(enh.pid);
     if (!p || !enh.after) return;
-    const prev = p.photo;
+    const prev = p.photo, prevSrc = p.photoSrc;
     p.photo = enh.after;
+    if (enh.before && enh.before.startsWith("data:")) p.photoSrc = enh.before;
     persist(); renderProductList(); renderFlyer();
     closeDialog($("dlg-enhance"));
-    toast("Foto melhorada com IA.", { undo: () => { p.photo = prev; persist(); renderProductList(); renderFlyer(); } });
+    toast("Foto melhorada com IA.", { undo: () => { p.photo = prev; p.photoSrc = prevSrc; persist(); renderProductList(); renderFlyer(); } });
   }
   function enhanceToManual() {
     const pid = enh.pid, src = enh.after || enh.before;
@@ -362,7 +381,7 @@
   $("crop-enhance").addEventListener("click", () => {
     const pid = crop.pid;
     if (!pid) return;
-    const src = crop.img?.src || productById(pid)?.photo;
+    const src = crop.orig || productById(pid)?.photoSrc || crop.img?.src || productById(pid)?.photo;
     closeDialog($("dlg-photo"));
     if (src) openEnhance(pid, src);
   });
@@ -386,7 +405,7 @@
   function fillForm() {
     const f = cur(), b = state.brand;
     el.title.value = f.title || ""; el.from.value = f.dateFrom || ""; el.to.value = f.dateTo || "";
-    el.disclaimer.value = f.disclaimer ?? (PRESETS[b.preset]?.disclaimer || DEFAULT_DISCLAIMER);
+    el.disclaimer.value = f.disclaimer ?? SEG().disclaimer;
     fillSelect(el.preset, b.preset);
     el.store.value = b.name || ""; el.slogan.value = b.slogan || "";
     el.c1.value = safeColor(b.c1, "#D61E26"); el.c2.value = safeColor(b.c2, "#1C3FAA"); el.c3.value = safeColor(b.c3, "#FFD600");
@@ -394,11 +413,23 @@
     el.address.value = b.address || ""; el.whatsapp.value = b.whatsapp || ""; el.instagram.value = b.instagram || "";
     document.querySelectorAll('input[name="format"]').forEach((i) => (i.checked = i.value === f.format));
     el.curName.textContent = f.name;
-    renderThemes(); updateLogoChrome(); renderProductList(); renderStickerUI();
+    renderSegmentUI(); renderThemes(); updateLogoChrome(); renderProductList(); renderStickerUI();
+  }
+  function segOptions() { return SEG_ORDER.map((k) => `<option value="${k}">${SEGS[k].emoji} ${esc(SEGS[k].label)}</option>`).join(""); }
+  function renderSegmentUI() {
+    const seg = SEG();
+    const fs = $("fld-segment"); if (fs) { if (!fs.options.length) fs.innerHTML = segOptions(); fs.value = seg.id; }
+    $("title-chips").innerHTML = seg.titles.map((t) => `<button type="button" class="chip">${esc(t)}</button>`).join("");
+    el.title.placeholder = seg.titles[0];
+    el.slogan.placeholder = "ex.: " + seg.sloganEx;
+    $("onb-store").placeholder = "ex.: " + seg.storeEx;
+    let dl = $("badge-list"); if (!dl) { dl = document.createElement("datalist"); dl.id = "badge-list"; document.body.appendChild(dl); }
+    dl.innerHTML = seg.badges.map((b) => `<option value="${esc(b)}">`).join("");
   }
   function logoHTML(b) {
     if (b.logo) return `<div class="fl-logo img"><img src="${b.logo}" alt=""></div>`;
     if (b.mark === "nenhum") return "";
+    if (b.mark === "icone") return `<div class="fl-logo"><span class="emo">${SEG().emoji}</span></div>`;
     if (b.mark === "inicial") return `<div class="fl-logo"><span class="ini">${esc((b.name || "?").trim().charAt(0).toUpperCase())}</span></div>`;
     return `<div class="fl-logo"><span class="cross"></span></div>`;
   }
@@ -437,7 +468,7 @@
         </label>
         <div class="p-fields">
           <label class="field">Nome<input type="text" data-act="name" maxlength="60" value="${esc(p.name)}" placeholder="Nome do produto"></label>
-          <label class="field">Detalhes<input type="text" data-act="details" maxlength="80" value="${esc(p.details)}" placeholder="ex.: caixa 30 comprimidos"></label>
+          <label class="field">Detalhes<input type="text" data-act="details" maxlength="80" value="${esc(p.details)}" placeholder="ex.: ${esc(SEG().detailsEx)}"></label>
         </div>
       </div>
       <div class="p-prices">
@@ -445,7 +476,7 @@
         <label class="field">Por<input type="text" inputmode="decimal" data-act="newPrice" value="${p.newPrice == null ? "" : formatInputPrice(p.newPrice)}" placeholder="0,00"></label>
         <div class="p-off ${off == null ? "is-empty" : ""}" aria-live="polite">${off == null ? "—" : "-" + off + "%"}</div>
       </div>
-      <label class="field">Selo<input type="text" list="badge-list" data-act="badge" maxlength="32" value="${esc(p.badge)}" placeholder="ex.: Leve 3 pague 2"></label>
+      <label class="field">Selo<input type="text" list="badge-list" data-act="badge" maxlength="32" value="${esc(p.badge)}" placeholder="ex.: ${esc(SEG().badgeEx)}"></label>
       <div class="p-actions">
         ${p.photo ? `<button type="button" class="btn-text" data-act="crop">${ic("crop")} Ajustar</button><button type="button" class="btn-text" data-act="nophoto">${ic("x")} Tirar foto</button>` : "<span></span>"}
         <button type="button" class="btn-text" data-act="enhance">${ic("sparkles")} Deixar bonita com IA</button>
@@ -486,7 +517,7 @@
     } else if (act === "dup") {
       if (ps.length >= MAX_PRODUCTS) return toast("Limite de 12 produtos.");
       ps.splice(i + 1, 0, { ...clone(ps[i]), id: uid() });
-    } else if (act === "nophoto") ps[i].photo = "";
+    } else if (act === "nophoto") { ps[i].photo = ""; ps[i].photoSrc = ""; }
     else if (act === "crop") return openCrop(ps[i].id);
     else if (act === "enhance") return openEnhance(ps[i].id);
     else return;
@@ -520,11 +551,13 @@
     return (STK_POS.find(([p]) => !used.has(p)) || STK_POS[0])[0];
   }
   function renderStickerGallery() {
-    const ids = window.stickerIds ? window.stickerIds(stkSet) : Object.keys(window.STICKERS || {});
+    let ids = window.stickerIds ? window.stickerIds(stkSet) : Object.keys(window.STICKERS || {});
+    if (window.orderStickersFor) ids = window.orderStickersFor(state.segment, ids);
     el.stkGallery.innerHTML = ids.map((id) => {
       const info = window.stickerInfo ? window.stickerInfo(id) : { label: (window.STICKERS[id] || ["Figurinha"])[0] };
       const mark = window.stickerMarkup ? window.stickerMarkup(id) : window.stickerSVG(id);
-      return `<button type="button" class="stk-pick" data-kind="${id}" role="listitem" aria-label="Adicionar figurinha ${esc(info.label)}">${mark}<span>${esc(info.label)}</span></button>`;
+      const sug = window.isSuggestedSticker && window.isSuggestedSticker(state.segment, id);
+      return `<button type="button" class="stk-pick${sug ? " is-sug" : ""}" data-kind="${id}" role="listitem" aria-label="Adicionar figurinha ${esc(info.label)}${sug ? " (sugerida)" : ""}">${mark}<span>${esc(info.label)}</span></button>`;
     }).join("");
     document.querySelectorAll(".stk-set").forEach((b) => {
       const on = b.dataset.set === stkSet;
@@ -567,7 +600,7 @@
     const info = window.stickerInfo ? window.stickerInfo(kind) : (window.STICKERS || {})[kind];
     if (!info) return;
     const caps = window.STICKER_CAPTIONS || {};
-    const cap = caps[kind] || "";
+    const cap = SEG().captions?.[kind] ?? caps[kind] ?? "";
     f.stickers.push({ id: uid("s"), kind, pos: nextStickerPos(), size: "m", caption: (window.stickerCaptionOK && !window.stickerCaptionOK(kind, cap)) ? "" : cap });
     persist(); renderStickerUsed(); renderFlyer();
     const label = info.label || info[0] || "Figurinha";
@@ -634,7 +667,7 @@
     }).join("") : `<div class="fl-empty"><b>Suas ofertas aqui</b><span>Adicione produtos no editor abaixo</span></div>`;
     const hideName = b.logo && b.logoOnly;
     const dates = datesLine(f), contacts = contactBits(b);
-    const disc = f.disclaimer ?? (PRESETS[b.preset]?.disclaimer || DEFAULT_DISCLAIMER);
+    const disc = f.disclaimer ?? SEG().disclaimer;
     const stks = (f.stickers || []).filter((s) => window.stickerInfo ? window.stickerInfo(s.kind) : window.STICKERS && window.STICKERS[s.kind]);
     const stkNode = (s) => {
       const raw = (s.caption || "").trim();
@@ -723,22 +756,43 @@
     document.querySelectorAll("#dlg-onboard .onb-dots span").forEach((d, i) => d.classList.toggle("on", i === step - 1));
     $("onb-next").textContent = step === 3 ? "Começar" : "Continuar";
   }
+  let onbSeg = null;
+  function renderOnbSegs() {
+    $("onb-seg").innerHTML = SEG_ORDER.map((k) => `<button type="button" class="biz-item" role="radio" aria-checked="${k === onbSeg}" data-seg="${k}"><span class="biz-emo" aria-hidden="true">${SEGS[k].emoji}</span><span>${esc(SEGS[k].label)}</span></button>`).join("");
+    $("onb-store").placeholder = "ex.: " + window.segmentOf(onbSeg).storeEx;
+  }
+  $("onb-seg").addEventListener("click", (e) => { const b = e.target.closest(".biz-item"); if (!b) return; onbSeg = b.dataset.seg; renderOnbSegs(); });
   function startOnboarding() {
-    fillSelect($("onb-preset"), state.brand.preset === "onix" ? "farmacia" : state.brand.preset);
-    $("onb-preset").querySelector('option[value="custom"]')?.remove();
-    $("onb-store").value = state.brand.preset === "onix" ? "" : state.brand.name;
+    onbSeg = state.onboarded ? state.segment : null;
+    renderOnbSegs();
+    $("onb-store").value = isPresetName(state.brand.name) ? "" : state.brand.name;
     showOnb(1); openDialog($("dlg-onboard"));
   }
   function finishOnboarding() {
     if (onbStep >= 2) {
-      const key = $("onb-preset").value, name = $("onb-store").value.trim();
-      if (key !== state.brand.preset || name) {
-        state.brand = { ...brandFromPreset(key, state.brand), logo: state.brand.logo, logoOnly: state.brand.logoOnly };
-        if (name) state.brand.name = name;
-        cur().disclaimer = null;
-      }
+      const name = $("onb-store").value.trim();
+      if (onbSeg && (onbSeg !== state.segment || !state.onboarded)) applySegment(onbSeg, { name, brand: true });
+      else if (name) { state.brand.name = name; if (state.brand.preset === "onix") state.brand.preset = "custom"; }
     }
     state.onboarded = true; persist(); fillForm(); renderFlyer(); closeDialog($("dlg-onboard"));
+  }
+  const isPresetName = (n) => !n || Object.values(PRESETS).some((p) => p.name === n);
+  // Troca o tipo de negócio: textos, sugestões, aviso, figurinhas; marca e exemplo só se ainda forem os padrões.
+  function applySegment(k, opts = {}) {
+    if (!SEGS[k]) return null;
+    const prev = clone({ segment: state.segment, brand: state.brand, flyer: cur() });
+    state.segment = k;
+    const b = state.brand;
+    if (opts.brand || b.preset !== "custom") {
+      const keepName = opts.name || (isPresetName(b.name) ? "" : b.name);
+      state.brand = { ...brandFromPreset(k, b), logo: b.logo, logoOnly: b.logoOnly };
+      if (keepName) state.brand.name = keepName;
+    }
+    const f = cur();
+    if (isUntouchedSample(f)) Object.assign(f, sampleContent(k));
+    if (f.disclaimer && Object.values(SEGS).some((s) => s.disclaimer === f.disclaimer)) f.disclaimer = null;
+    persist(); fillForm(); renderFlyer(); renderStickerGallery();
+    return prev;
   }
   $("onb-next").addEventListener("click", () => (onbStep < 3 ? showOnb(onbStep + 1) : finishOnboarding()));
   $("onb-skip").addEventListener("click", () => { onbStep = 1; finishOnboarding(); });
@@ -753,9 +807,17 @@
     el.to.addEventListener("input", fl("dateTo"));
     el.disclaimer.addEventListener("input", fl("disclaimer"));
     $("btn-disc-reset").addEventListener("click", () => { cur().disclaimer = null; persist(); fillForm(); renderFlyer(); });
-    $("title-chips").innerHTML = TITLE_SUGGESTIONS.map((t) => `<button type="button" class="chip">${esc(t)}</button>`).join("");
     $("title-chips").addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (!c) return; cur().title = c.textContent; el.title.value = c.textContent; persist(); renderFlyer(); });
-    const dl = document.createElement("datalist"); dl.id = "badge-list"; dl.innerHTML = BADGES.map((b) => `<option value="${esc(b)}">`).join(""); document.body.appendChild(dl);
+    $("fld-segment").innerHTML = segOptions();
+    $("fld-segment").addEventListener("change", (e) => {
+      const k = e.target.value, prev = applySegment(k);
+      if (!prev) return;
+      toast(`Tipo de negócio: ${SEGS[k].label}.`, { undo: () => {
+        state.segment = prev.segment; state.brand = prev.brand;
+        const i = state.flyers.findIndex((x) => x.id === prev.flyer.id); if (i >= 0) state.flyers[i] = prev.flyer;
+        persist(); fillForm(); renderFlyer(); renderStickerGallery();
+      } });
+    });
 
     const br = (key, getter) => (e) => { state.brand[key] = getter ? getter(e.target) : e.target.value; if (["name", "slogan", "c1", "c2", "c3", "mark"].includes(key)) { state.brand.preset = "custom"; el.preset.value = "custom"; } persist(); updateLogoChrome(); if (/^c\d$/.test(key)) { renderThemes(); applyStickerColors(); } renderFlyer(); };
     el.store.addEventListener("input", br("name")); el.slogan.addEventListener("input", br("slogan"));

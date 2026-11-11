@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Vitrine">
   <meta name="author" content="Nextwave Studio Brasil">
-  <meta name="description" content="Vitrine de Ofertas: crie encartes de promoção para farmácias e lojas no celular. Story, Feed e A4, grátis e sem cadastro.">
+  <meta name="description" content="Vitrine de Ofertas: crie encartes de promoção para mercados, açougues, padarias, farmácias, lojas de roupa, pet shops e todo tipo de comércio, direto no celular. Story, Feed e A4, grátis e sem cadastro.">
   <title>Vitrine de Ofertas — encartes de promoção</title>
   <link rel="icon" type="image/png" href="icons/favicon.png">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -110,6 +110,9 @@
 
       <div class="panel" id="sec-loja">
         <h2>Sua loja</h2>
+        <label class="field">Tipo de negócio
+          <select id="fld-segment"></select>
+        </label>
         <label class="field">Modelo de marca
           <select id="fld-preset"></select>
         </label>
@@ -117,7 +120,7 @@
           <input type="text" id="fld-store" maxlength="40" placeholder="Nome da sua loja">
         </label>
         <label class="field">Slogan (opcional)
-          <input type="text" id="fld-slogan" maxlength="60" placeholder="ex.: Saúde com preço justo">
+          <input type="text" id="fld-slogan" maxlength="60" placeholder="ex.: Economia todo dia">
         </label>
         <div class="colors">
           <label class="color-field">Cor principal<input type="color" id="fld-c1"></label>
@@ -133,8 +136,9 @@
             <button type="button" class="btn-text" id="btn-logo-clear" hidden>Remover logo</button>
             <label class="field compact">Sem logo, mostrar
               <select id="fld-mark">
-                <option value="cruz">Cruz de farmácia</option>
                 <option value="inicial">Inicial do nome</option>
+                <option value="icone">Ícone do tipo de negócio</option>
+                <option value="cruz">Cruz (farmácia)</option>
                 <option value="nenhum">Nada</option>
               </select>
             </label>
@@ -178,7 +182,7 @@
 
       <div class="panel about" id="sobre">
         <h2>Sobre</h2>
-        <p class="hint"><strong>Vitrine de Ofertas</strong> v2.2.0 · Desenvolvido por <strong>Nextwave Studio Brasil</strong>.<br>Grátis, sem cadastro e sem anúncios. Seus dados ficam só no seu aparelho. A função “Deixar bonita com IA” recorta e melhora a foto no próprio aparelho (modelo U²-Net, licença Apache-2.0).<br>A marca “Drogarias Ônix” é um modelo pronto; troque pelo nome e cores da sua loja em “Sua loja”.</p>
+        <p class="hint"><strong>Vitrine de Ofertas</strong> v2.2.1 · Desenvolvido por <strong>Nextwave Studio Brasil</strong>.<br>Para mercados, açougues, hortifrútis, padarias, farmácias, lojas de roupa, pet shops, material de construção e todo tipo de comércio. Grátis, sem cadastro e sem anúncios. Seus dados ficam só no seu aparelho. A função “Deixar bonita com IA” recorta e melhora a foto no próprio aparelho (modelos IS-Net/DIS e U²-Net, licença Apache-2.0).<br>A marca “Drogarias Ônix” é só um exemplo pronto; troque pelo nome e cores da sua loja em “Sua loja”.</p>
       </div>
     </section>
   </main>
@@ -279,14 +283,12 @@
     </div>
     <div class="onb" data-step="2" hidden>
       <div class="onb-art" aria-hidden="true">🏪</div>
-      <h2>Qual é a sua loja?</h2>
+      <h2>Qual é o seu negócio?</h2>
+      <div class="biz-grid" id="onb-seg" role="radiogroup" aria-label="Tipo de negócio"></div>
       <label class="field">Nome da loja
-        <input type="text" id="onb-store" maxlength="40" placeholder="ex.: Farmácia Central">
+        <input type="text" id="onb-store" maxlength="40" placeholder="ex.: Loja do Bairro">
       </label>
-      <label class="field">Começar com a marca
-        <select id="onb-preset"></select>
-      </label>
-      <p class="hint">Dá para trocar nome, cores, logo e slogan depois, em “Sua loja”.</p>
+      <p class="hint">Os exemplos, cores e sugestões se ajustam ao seu tipo de negócio. Dá para trocar tudo depois, em “Sua loja”.</p>
     </div>
     <div class="onb" data-step="3" hidden>
       <div class="onb-art" aria-hidden="true">✨</div>
@@ -310,6 +312,7 @@
   <script src="js/sortable.min.js" defer></script>
   <script src="js/stickers.js" defer></script>
   <script src="js/stickers3d.js" defer></script>
+  <script src="js/segments.js" defer></script>
   <script src="js/enhance.js" defer></script>
   <script src="js/app.js" defer></script>
 </body>

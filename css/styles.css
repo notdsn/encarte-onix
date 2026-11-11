@@ -818,3 +818,13 @@ body { padding-bottom: calc(var(--tab-h) + 16px); font-family: Jakarta, Nunito, 
 .flyer[data-theme="premium"] .fl-logo { border-radius: 6px; }
 .flyer[data-theme="premium"] .fl-dates { background: transparent; padding: 0; border-radius: 0; }
 .flyer[data-theme="neon"] .fl-dates { background: rgba(0,240,255,.12); color: #00f0ff; }
+
+/* v2.2.1 — tipo de negócio */
+.biz-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 4px 0 14px; }
+.biz-item { display: flex; align-items: center; gap: 8px; text-align: left; padding: 10px; min-height: 48px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--card, #fff); color: var(--ink); font-weight: 800; font-size: 13px; line-height: 1.15; }
+.biz-item[aria-checked="true"] { border-color: var(--app, #2547d0); box-shadow: 0 0 0 3px color-mix(in srgb, var(--app, #2547d0) 22%, transparent); }
+.biz-emo { font-size: 22px; line-height: 1; }
+.fl-logo .emo { font-size: calc(var(--logo) * .56); line-height: 1; font-family: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif; }
+.stk-pick.is-sug { position: relative; }
+.stk-pick.is-sug::after { content: "★"; position: absolute; top: 4px; right: 6px; font-size: 12px; color: #f5a400; }
+#btn-logo-clear[hidden], #logo-only-wrap[hidden] { display: none !important; }
