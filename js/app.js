@@ -94,6 +94,95 @@
   const ic = (n) => `<svg class="ic" aria-hidden="true"><use href="#i-${n}"/></svg>`;
   const safeColor = (c, d) => (/^#[0-9a-f]{6}$/i.test(c || "") ? c : d);
 
+  // ---------- foto do produto: descobre se é recorte, fundo liso ou foto e corta as sobras ----------
+  // kind: "cutout" (PNG transparente) | "flat" (produto em fundo liso, ex.: branco) | "photo" (foto comum)
+  const photoSig = (u) => (u ? u.length + ":" + u.slice(-48) : "");
+  async function analyzePhoto(url) {
+    const img = await loadImg(url);
+    const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
+    const k = Math.min(1, 220 / Math.max(W, H)), w = Math.max(8, Math.round(W * k)), h = Math.max(8, Math.round(H * k));
+    const c = document.createElement("canvas"); c.width = w; c.height = h;
+    const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0, w, h);
+    const d = x.getImageData(0, 0, w, h).data;
+    const at = (i, j) => (j * w + i) * 4;
+    let transp = 0, borderT = 0, borderN = 0; const border = [];
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+      const o = at(i, j), a = d[o + 3];
+      if (a < 200) transp++;
+      if (i < 2 || j < 2 || i >= w - 2 || j >= h - 2) { borderN++; if (a < 200) borderT++; else border.push([d[o], d[o + 1], d[o + 2]]); }
+    }
+    let kind = "photo", bg = null, keep;
+    if (transp / (w * h) > 0.04 || borderT / borderN > 0.25) { kind = "cutout"; keep = (o) => d[o + 3] > 24; }
+    else if (border.length) {
+      const med = [0, 1, 2].map((ch) => border.map((p) => p[ch]).sort((a, b) => a - b)[border.length >> 1]);
+      // fundo liso de verdade: borda quase toda da mesma cor (claro: tolerância maior; colorido: bem rígido, para não apagar mesa/piso de foto)
+      const lum = 0.2126 * med[0] + 0.7152 * med[1] + 0.0722 * med[2];
+      const tol = lum > 200 ? 40 : 22, need = lum > 200 ? 0.86 : 0.95;
+      const near = border.filter((p) => Math.abs(p[0] - med[0]) + Math.abs(p[1] - med[1]) + Math.abs(p[2] - med[2]) < tol).length / border.length;
+      if (near >= need) {
+        kind = "flat"; bg = med;
+        keep = (o) => Math.abs(d[o] - med[0]) + Math.abs(d[o + 1] - med[1]) + Math.abs(d[o + 2] - med[2]) > 60;
+      }
+    }
+    const meta = { sig: photoSig(url), kind, w: W, h: H, v: 2 };
+    if (bg) { meta.bg = "#" + bg.map((v) => v.toString(16).padStart(2, "0")).join(""); meta.light = 0.2126 * bg[0] + 0.7152 * bg[1] + 0.0722 * bg[2] > 205; }
+    if (kind === "photo") return { meta, fit: "" };
+    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    let kept = 0;
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (keep(at(i, j))) { kept++; if (i < x0) x0 = i; if (i > x1) x1 = i; if (j < y0) y0 = j; if (j > y1) y1 = j; }
+    if (x1 < 0 || (x1 - x0) * (y1 - y0) < w * h * 0.01) return { meta: { ...meta, kind: "photo" }, fit: "" };
+    // "fundo liso" que ocupa a foto inteira (piso, parede com textura): é foto comum
+    const boxA = (x1 - x0 + 1) * (y1 - y0 + 1);
+    if (kind === "flat" && (boxA > w * h * 0.86 || kept / boxA < 0.3)) return { meta: { sig: meta.sig, kind: "photo", w: W, h: H, v: 2 }, fit: "" };
+    const pad = Math.round(Math.max(x1 - x0, y1 - y0) * 0.03);
+    x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(w - 1, x1 + pad); y1 = Math.min(h - 1, y1 + pad);
+    const sx = x0 / k, sy = y0 / k, sw = Math.min(W - sx, (x1 - x0 + 1) / k), sh = Math.min(H - sy, (y1 - y0 + 1) / k);
+    meta.ratio = +(sw / sh).toFixed(3);
+    const s2 = Math.min(1, 900 / Math.max(sw, sh));
+    const o = document.createElement("canvas"); o.width = Math.max(1, Math.round(sw * s2)); o.height = Math.max(1, Math.round(sh * s2));
+    const ox = o.getContext("2d"); ox.imageSmoothingQuality = "high"; ox.drawImage(img, sx, sy, sw, sh, 0, 0, o.width, o.height);
+    if (kind === "flat" && bg) {
+      // fundo liso: apaga só o fundo ligado às bordas (flood fill), o produto vira recorte
+      const W2 = o.width, H2 = o.height, id = ox.getImageData(0, 0, W2, H2), q = id.data, N = W2 * H2;
+      const diff = (i) => Math.abs(q[i * 4] - bg[0]) + Math.abs(q[i * 4 + 1] - bg[1]) + Math.abs(q[i * 4 + 2] - bg[2]);
+      const TOL = 54, seen = new Uint8Array(N), stack = [];
+      const push = (i) => { if (!seen[i] && diff(i) < TOL) { seen[i] = 1; stack.push(i); } };
+      for (let i = 0; i < W2; i++) { push(i); push((H2 - 1) * W2 + i); }
+      for (let j = 0; j < H2; j++) { push(j * W2); push(j * W2 + W2 - 1); }
+      while (stack.length) { const i = stack.pop(), xx = i % W2, yy = (i / W2) | 0;
+        if (xx > 0) push(i - 1); if (xx < W2 - 1) push(i + 1); if (yy > 0) push(i - W2); if (yy < H2 - 1) push(i + W2); }
+      let removed = 0;
+      for (let i = 0; i < N; i++) if (seen[i]) { q[i * 4 + 3] = 0; removed++; }
+      // borda suave: pixels do produto encostados no fundo ficam semitransparentes conforme a semelhança
+      for (let i = 0; i < N; i++) {
+        if (seen[i]) continue; const xx = i % W2, yy = (i / W2) | 0;
+        const nb = (xx > 0 && seen[i - 1]) || (xx < W2 - 1 && seen[i + 1]) || (yy > 0 && seen[i - W2]) || (yy < H2 - 1 && seen[i + W2]);
+        if (nb) { const dv = diff(i); q[i * 4 + 3] = Math.round(255 * Math.min(1, Math.max(0.15, (dv - TOL * 0.5) / (TOL * 1.6)))); }
+      }
+      if (removed / N > 0.06) { ox.putImageData(id, 0, 0); kind = "cutout"; meta.kind = "cutout"; meta.from = "flat"; }
+    }
+    let fit = kind === "cutout" ? o.toDataURL("image/webp", 0.9) : o.toDataURL("image/jpeg", 0.9);
+    if (kind === "cutout" && !fit.startsWith("data:image/webp")) fit = o.toDataURL("image/png");
+    return { meta, fit };
+  }
+  let photoJobs = Promise.resolve(), photoPending = 0;
+  function queuePhotoAnalysis() {
+    const todo = [];
+    state.flyers.forEach((f) => f.products.forEach((p) => { if (p.photo && (!p.photoMeta || p.photoMeta.sig !== photoSig(p.photo)) && !p._busy) todo.push(p); }));
+    if (!todo.length) return photoJobs;
+    todo.forEach((p) => { p._busy = true; photoPending++;
+      photoJobs = photoJobs.then(async () => {
+        const src = p.photo;
+        try { const r = await analyzePhoto(src); if (p.photo === src) { p.photoMeta = r.meta; p.photoFit = r.fit; } }
+        catch { if (p.photo === src) { p.photoMeta = { sig: photoSig(src), kind: "photo", v: 1 }; p.photoFit = ""; } }
+        finally { delete p._busy; photoPending--; }
+        if (!photoPending) { persist(); renderFlyer(); }
+      });
+    });
+    return photoJobs;
+  }
+  const photosReady = async () => { queuePhotoAnalysis(); await photoJobs; };
+
   // ---------- storage (IndexedDB with localStorage fallback) ----------
   function idbOpen() {
     return new Promise((res, rej) => {
@@ -161,7 +250,9 @@
   }
   function normProduct(p) {
     return { id: p.id || uid(), name: p.name || "", details: p.details || "", oldPrice: p.oldPrice == null || p.oldPrice === "" ? null : Number(p.oldPrice),
-      newPrice: p.newPrice == null || p.newPrice === "" ? null : Number(p.newPrice), photo: p.photo || "", photoSrc: p.photoSrc || "", badge: p.badge || "" };
+      newPrice: p.newPrice == null || p.newPrice === "" ? null : Number(p.newPrice), photo: p.photo || "", photoSrc: p.photoSrc || "", badge: p.badge || "",
+      fit: p.fit === "cover" || p.fit === "contain" ? p.fit : "auto",
+      photoFit: p.photo && p.photoMeta && p.photoMeta.sig === photoSig(p.photo) ? p.photoFit || "" : "", photoMeta: p.photo && p.photoMeta && p.photoMeta.sig === photoSig(p.photo) ? p.photoMeta : null };
   }
   function normalize(s) {
     const fresh = !(s && typeof s === "object");
@@ -599,6 +690,7 @@
         <div class="p-off ${off == null ? "is-empty" : ""}" aria-live="polite">${off == null ? "—" : "-" + off + "%"}</div>
       </div>
       <label class="field">Selo<input type="text" list="badge-list" data-act="badge" maxlength="32" value="${esc(p.badge)}" placeholder="ex.: ${esc(SEG().badgeEx)}"></label>
+      ${p.photo ? `<div class="p-fit"><span>Foto no encarte</span><div class="seg2 seg-fit" role="radiogroup" aria-label="Como a foto aparece">${[["auto", "Automático"], ["cover", "Preencher"], ["contain", "Encaixar"]].map(([v, l]) => `<button type="button" role="radio" data-act="fit" data-fit="${v}" aria-checked="${(p.fit || "auto") === v}">${l}</button>`).join("")}</div></div>` : ""}
       <div class="p-actions">
         ${p.photo ? `<button type="button" class="btn-text" data-act="crop">${ic("crop")} Ajustar</button><button type="button" class="btn-text" data-act="nophoto">${ic("x")} Tirar foto</button>` : "<span></span>"}
         <button type="button" class="btn-text" data-act="enhance">${ic("sparkles")} Deixar bonita com IA</button>
@@ -639,7 +731,8 @@
     } else if (act === "dup") {
       if (ps.length >= MAX_PRODUCTS) return toast("Limite de 12 produtos.");
       ps.splice(i + 1, 0, { ...clone(ps[i]), id: uid() });
-    } else if (act === "nophoto") { ps[i].photo = ""; ps[i].photoSrc = ""; }
+    } else if (act === "nophoto") { ps[i].photo = ""; ps[i].photoSrc = ""; ps[i].photoFit = ""; ps[i].photoMeta = null; }
+    else if (act === "fit") { ps[i].fit = btn.dataset.fit; btn.parentNode.querySelectorAll("button").forEach((b) => b.setAttribute("aria-checked", String(b === btn))); persist(); renderFlyer(); return; }
     else if (act === "crop") return openCrop(ps[i].id);
     else if (act === "enhance") return openEnhance(ps[i].id);
     else return;
@@ -784,7 +877,20 @@
       const de = p.oldPrice != null && p.newPrice != null && p.oldPrice > p.newPrice ? `<span class="card-de">de ${formatBRL(p.oldPrice)}</span>` : "";
       const price = p.newPrice ?? p.oldPrice;
       const por = price != null ? `<span class="card-por">${de ? "<small>por</small> " : ""}${formatBRL(price)}</span>` : "";
-      return `<article class="card"><div class="card-photo">${p.badge ? `<span class="card-badge">${esc(p.badge)}</span>` : ""}${off != null ? `<span class="card-off">-${off}%</span>` : ""}${p.photo ? `<img src="${p.photo}" alt="">` : `<span class="card-mono">${esc(letter)}</span>`}</div>
+      const m = p.photo && p.photoMeta && p.photoMeta.sig === photoSig(p.photo) ? p.photoMeta : null;
+      let mode = "empty", src = p.photo, style = "";
+      if (p.photo) {
+        const kind = m ? m.kind : "pending";
+        if (p.fit === "cover") mode = "cover";
+        else if (p.fit === "contain") mode = kind === "cutout" ? "cutout" : kind === "flat" ? (m.light ? "flat" : "tone") : "contain";
+        else mode = kind === "cutout" ? "cutout" : kind === "flat" ? (m.light ? "flat" : "tone") : kind === "photo" ? "cover" : "contain";
+        if ((mode === "cutout" || mode === "flat" || mode === "tone") && p.photoFit) src = p.photoFit;
+        if (mode === "cover" && p.photoFit && m && m.kind !== "photo") src = p.photoFit;
+        if (mode === "tone" && m.bg) style = ` style="--tone:${m.bg}"`;
+      }
+      const ph = p.photo ? `<span class="cp-floor" aria-hidden="true"></span><img class="cp-img" src="${src}" alt="">`
+        : `<span class="cp-ph" aria-hidden="true"><span class="cp-ring">${icon(SEG().icon, "cp-ico")}</span></span>`;
+      return `<article class="card"><div class="card-photo" data-mode="${mode}"${style}>${p.badge ? `<span class="card-badge">${esc(p.badge)}</span>` : ""}${off != null ? `<span class="card-off">-${off}%</span>` : ""}${ph}</div>
         <h2 class="card-name">${esc(p.name || "Produto")}</h2>${p.details ? `<p class="card-det">${esc(p.details)}</p>` : ""}<div class="card-prices">${de}${por}</div></article>`;
     }).join("") : `<div class="fl-empty"><b>Suas ofertas aqui</b><span>Adicione produtos no editor abaixo</span></div>`;
     const hideName = b.logo && b.logoOnly;
@@ -848,6 +954,7 @@
   }
   function renderFlyer() {
     const f = cur(), b = state.brand;
+    if (state.flyers) queuePhotoAnalysis();
     applyFlyerAttrs(el.flyer, f, b);
     el.flyer.innerHTML = flyerHTML(f, b);
     layoutPills(el.flyer);
@@ -1063,6 +1170,7 @@
     node.style.cssText += `;position:fixed;left:0;top:0;margin:0;transform:none;z-index:9997;width:${size.w}px;height:${size.h}px;`;
     document.body.append(node, cover);
     try {
+      if (photoPending) { await photosReady(); node.innerHTML = el.flyer.innerHTML; layoutPills(node); }
       if (window.recolorStickers3D) await window.recolorStickers3D(node, safeColor(state.brand.c1, NEUTRAL.c1));
       layoutPills(node);
       await document.fonts.ready; await waitImgs(node);
@@ -1188,7 +1296,7 @@
     hideSplash();
     if (!state.onboarded) startOnboarding();
     if ("serviceWorker" in navigator && window.isSecureContext) navigator.serviceWorker.register("sw.js").catch(() => {});
-    window.__vitrine = { get state() { return state; }, renderBgPicker, renderAlignUI, renderPngBlob, renderFlyer, layoutPills, renderStickerUI, renderStickerGallery, openEnhance, openCrop, applyLogoFile, shrinkLogo, updateLogoChrome, persist, fillForm, setStickerSet(s) { stkSet = s; renderStickerGallery(); } };
+    window.__vitrine = { get state() { return state; }, photosReady, analyzePhoto, renderBgPicker, renderAlignUI, renderPngBlob, renderFlyer, layoutPills, renderStickerUI, renderStickerGallery, openEnhance, openCrop, applyLogoFile, shrinkLogo, updateLogoChrome, persist, fillForm, setStickerSet(s) { stkSet = s; renderStickerGallery(); } };
   }
   boot();
 })();

@@ -1456,3 +1456,88 @@ button, .file-btn, .seg-item, .theme-swatch, .chip, .bg-tile, .biz-item, .stk-pi
 .stk-item .p-remove { position: absolute; top: 8px; right: 8px; }
 .stk-item .stk-fields > .p-title { padding-right: 46px; min-height: 40px; display: flex; align-items: center; }
 .stk-item .stk-row { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+
+/* =====================================================================
+   v2.3.1 — foto do produto ocupa a área toda do card (visual de app de delivery)
+   ===================================================================== */
+.flyer { --card-pad: 16px; --slot-r: calc(var(--radius-card) - 2px); }
+.flyer[data-density="hero"] { --card-pad: 28px; }
+.flyer[data-density="dense"] { --card-pad: 13px; }
+.flyer[data-density="compact"] { --card-pad: 10px; }
+.flyer[data-format="feed"] { --card-pad: 12px; }
+.flyer[data-format="feed"][data-density="hero"] { --card-pad: 18px; }
+.flyer[data-format="feed"][data-density="comfortable"] { --card-pad: 11px; }
+.flyer[data-format="feed"][data-density="dense"] { --card-pad: 9px; }
+.flyer[data-format="feed"][data-density="compact"] { --card-pad: 7px; }
+.flyer[data-format][data-density] .card { padding: 0 var(--card-pad) calc(var(--card-pad) * 1.05); isolation: isolate; }
+/* área da imagem de ponta a ponta no topo do card, com os cantos do card */
+.flyer[data-format][data-density] .card-photo {
+  margin: 0 calc(var(--card-pad) * -1) calc(var(--card-pad) * .75);
+  border-radius: var(--radius-card) var(--radius-card) calc(var(--radius-card) * .45) calc(var(--radius-card) * .45);
+  overflow: hidden;
+}
+.flyer .card-photo[data-mode] { background: var(--fl-slot); }
+/* fundo da área da imagem: degradê suave na cor do modelo (nada de caixa branca chapada) */
+.flyer {
+  --fl-slot: radial-gradient(120% 95% at 50% 18%, #ffffff 0%, color-mix(in srgb, var(--c1) 9%, #f3f5fa) 62%, color-mix(in srgb, var(--c1) 18%, #e9edf5) 100%);
+  --fl-slot-light: var(--fl-slot);
+}
+.flyer[data-theme="saude"] { --fl-slot: radial-gradient(120% 95% at 50% 18%, #fff 0%, #e6f6ef 60%, #cfeee1 100%); }
+.flyer[data-theme="beleza"] { --fl-slot: radial-gradient(120% 95% at 50% 18%, #fff 0%, #fdeaf3 60%, #f8d5e7 100%); }
+.flyer[data-theme="natal"] { --fl-slot: radial-gradient(120% 95% at 50% 18%, #fff 0%, #f7efe2 60%, #efe0c8 100%); }
+.flyer[data-theme="premium"] { --fl-slot: radial-gradient(120% 95% at 50% 18%, #fffdf9 0%, #f3ede3 65%, #e9e0d1 100%); }
+.flyer[data-theme="clean"] { --fl-slot: radial-gradient(120% 95% at 50% 18%, #fff 0%, #f2f4f9 65%, #e6eaf3 100%); }
+/* modelos escuros: recortes ficam num degradê escuro com brilho na cor da marca */
+.flyer[data-theme="noite"] { --fl-slot: radial-gradient(110% 90% at 50% 22%, color-mix(in srgb, var(--c1) 38%, #24356e) 0%, #15244f 58%, #0e1a3d 100%); --fl-slot-light: radial-gradient(120% 95% at 50% 18%, #fff 0%, #e8ecf7 65%, #d6dcee 100%); }
+.flyer[data-theme="black"] { --fl-slot: radial-gradient(110% 90% at 50% 22%, #3a3a3a 0%, #222 58%, #161616 100%); --fl-slot-light: radial-gradient(120% 95% at 50% 18%, #fff 0%, #f1f1f1 65%, #e2e2e2 100%); }
+.flyer[data-theme="neon"] { --fl-slot: radial-gradient(110% 90% at 50% 25%, rgba(255,43,214,.42) 0%, rgba(80,30,160,.5) 50%, #140834 100%); --fl-slot-light: radial-gradient(120% 95% at 50% 18%, #fff 0%, #f6ecff 62%, #e7d6ff 100%); }
+.flyer[data-theme="gradiente"] { --fl-slot: radial-gradient(120% 95% at 50% 18%, #fff 0%, color-mix(in srgb, var(--c1) 12%, #f4f5fb) 62%, color-mix(in srgb, var(--c2) 18%, #e7eaf4) 100%); }
+
+.card-photo .cp-img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; max-width: none; }
+/* foto comum: preenche tudo (corte inteligente no centro, um pouco acima para produtos) */
+.card-photo[data-mode="cover"] .cp-img { object-fit: cover; object-position: 50% 42%; }
+.card-photo[data-mode="cover"]::after { content: ""; position: absolute; inset: auto 0 0; height: 32%; background: linear-gradient(180deg, transparent, rgba(0,0,0,.12)); pointer-events: none; z-index: 1; }
+/* recorte e produto em fundo liso: grande (≈92%), com sombra suave embaixo */
+.card-photo[data-mode="cutout"] .cp-img,
+.card-photo[data-mode="flat"] .cp-img,
+.card-photo[data-mode="tone"] .cp-img,
+.card-photo[data-mode="contain"] .cp-img { inset: 5% 5% 6%; width: 90%; height: 89%; object-fit: contain; }
+.card-photo[data-mode="cutout"] .cp-img { filter: drop-shadow(0 14px 14px rgba(15,23,42,.22)) drop-shadow(0 3px 4px rgba(15,23,42,.14)); }
+.flyer .card-photo[data-mode="flat"] { background: var(--fl-slot-light); }
+.card-photo[data-mode="flat"] .cp-img { mix-blend-mode: multiply; }
+.flyer .card-photo[data-mode="tone"] { background: radial-gradient(120% 95% at 50% 18%, color-mix(in srgb, var(--tone) 70%, #fff) 0%, var(--tone) 70%); }
+.flyer .card-photo[data-mode="contain"] { background: var(--fl-slot-light); }
+.cp-floor { display: none; }
+.card-photo[data-mode="cutout"] .cp-floor, .card-photo[data-mode="flat"] .cp-floor, .card-photo[data-mode="tone"] .cp-floor {
+  display: block; position: absolute; left: 18%; right: 18%; bottom: 4%; height: 10%; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(15,23,42,.26), rgba(15,23,42,0)); pointer-events: none;
+}
+.flyer[data-theme="noite"] .card-photo[data-mode="cutout"] .cp-floor,
+.flyer[data-theme="black"] .card-photo[data-mode="cutout"] .cp-floor,
+.flyer[data-theme="neon"] .card-photo[data-mode="cutout"] .cp-floor { background: radial-gradient(closest-side, rgba(0,0,0,.55), rgba(0,0,0,0)); }
+.card-photo .card-badge, .card-photo .card-off { z-index: 3; }
+/* sem foto: degradê do modelo + ícone do tipo de negócio */
+.flyer .card-photo[data-mode="empty"] { background: radial-gradient(120% 120% at 20% 0%, color-mix(in srgb, var(--c1) 55%, #fff) 0%, var(--c1) 45%, color-mix(in srgb, var(--c1) 60%, var(--c2)) 100%); }
+.cp-ph { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; }
+.cp-ph::before { content: ""; position: absolute; width: 70%; aspect-ratio: 1; right: -18%; top: -30%; border-radius: 50%; background: rgba(255,255,255,.14); }
+.cp-ph::after { content: ""; position: absolute; width: 50%; aspect-ratio: 1; left: -14%; bottom: -26%; border-radius: 50%; background: rgba(255,255,255,.09); }
+.cp-ring { position: relative; z-index: 1; width: min(46%, 46cqh, 200px); aspect-ratio: 1; min-width: 34px; border-radius: 30%; display: grid; place-items: center; background: rgba(255,255,255,.18); box-shadow: inset 0 0 0 2px rgba(255,255,255,.28), 0 10px 26px -10px rgba(0,0,0,.35); }
+.cp-ico { width: 56%; height: 56%; color: #fff; stroke-width: 1.7; }
+.card-photo { container-type: size; }
+.flyer[data-theme="black"] .card-photo[data-mode="empty"] { background: radial-gradient(120% 120% at 20% 0%, #3a3a3a, #1c1c1c 60%); }
+.flyer[data-theme="black"] .cp-ico { color: #f5c400; }
+.flyer[data-theme="neon"] .card-photo[data-mode="empty"] { background: radial-gradient(120% 120% at 20% 0%, #ff2bd6 0%, #6a1bd1 55%, #1a0a46 100%); }
+.flyer[data-theme="premium"] .card-photo[data-mode="empty"] { background: radial-gradient(120% 120% at 20% 0%, #fbf8f2, #e9e0d1 70%); }
+.flyer[data-theme="premium"] .cp-ico { color: #1a1a1a; }
+.flyer[data-theme="premium"] .cp-ring { background: rgba(255,255,255,.6); box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+.flyer[data-theme="clean"] .card-photo[data-mode="empty"] { background: radial-gradient(120% 120% at 20% 0%, color-mix(in srgb, var(--c1) 22%, #fff), color-mix(in srgb, var(--c1) 40%, #eef1f8) 80%); }
+.flyer[data-theme="clean"] .cp-ico { color: var(--c1); }
+.flyer[data-theme="clean"] .cp-ring { background: rgba(255,255,255,.7); }
+.card-mono { display: none; }
+/* card com foto de ponta a ponta: selos com leve vidro */
+.flyer .card-badge, .flyer .card-off { box-shadow: 0 6px 16px -6px rgba(0,0,0,.35); }
+/* editor: Preencher / Encaixar */
+.p-fit { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 2px 0 8px; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.seg-fit { margin: 0; flex: 0 1 auto; }
+.seg-fit button { padding: 0 9px; font-size: 12px; min-height: 34px; }
+.p-photo img { object-fit: cover; }
