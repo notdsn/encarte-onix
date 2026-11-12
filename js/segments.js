@@ -10,6 +10,7 @@
 
   const S = {
     farmacia: {
+      icon: "pill", bgLabel: "Itens de farmácia",
       label: "Farmácia / drogaria", emoji: "💊",
       brand: { name: "Minha Farmácia", slogan: "Saúde com preço justo", c1: "#0E8A6A", c2: "#2A7DE1", c3: "#FFCF3A", mark: "cruz" },
       storeEx: "Farmácia Central", sloganEx: "Saúde com preço justo", detailsEx: "caixa 30 comprimidos", badgeEx: "Leve 3 pague 2",
@@ -22,6 +23,7 @@
       captions: {},
     },
     mercado: {
+      icon: "shopping-cart", bgLabel: "Mercearia",
       label: "Supermercado / mercado", emoji: "🛒",
       brand: { name: "Meu Mercado", slogan: "Economia todo dia", c1: "#E4572E", c2: "#17324D", c3: "#FFC914", mark: "icone" },
       storeEx: "Mercado Bom Preço", sloganEx: "Economia todo dia", detailsEx: "pacote 5 kg", badgeEx: "Leve 3 pague 2",
@@ -34,6 +36,7 @@
       captions: { "3d-coracao": "Feito para sua família" },
     },
     acougue: {
+      icon: "beef", bgLabel: "Carnes",
       label: "Açougue / casa de carnes", emoji: "🥩",
       brand: { name: "Meu Açougue", slogan: "Carne de qualidade todo dia", c1: "#B3121F", c2: "#2B1A14", c3: "#F2C14E", mark: "icone" },
       storeEx: "Casa de Carnes Boi Bom", sloganEx: "Carne de qualidade todo dia", detailsEx: "preço do kg", badgeEx: "Para o churrasco",
@@ -46,6 +49,7 @@
       captions: { "3d-fogo": "Bom para o churrasco", "3d-coracao": "Feito com carinho" },
     },
     hortifruti: {
+      icon: "carrot", bgLabel: "Frutas e verduras",
       label: "Hortifrúti / sacolão", emoji: "🥦",
       brand: { name: "Meu Hortifrúti", slogan: "Fresquinho todo dia", c1: "#2E9E44", c2: "#14532D", c3: "#FFB703", mark: "icone" },
       storeEx: "Hortifrúti da Praça", sloganEx: "Fresquinho todo dia", detailsEx: "preço do kg", badgeEx: "Fresquinho",
@@ -58,6 +62,7 @@
       captions: { "3d-coracao": "Fresquinho pra você" },
     },
     padaria: {
+      icon: "croissant", bgLabel: "Pães e bolos",
       label: "Padaria / confeitaria", emoji: "🥖",
       brand: { name: "Minha Padaria", slogan: "Pão quentinho toda hora", c1: "#C26A1B", c2: "#4A2C17", c3: "#F6D28B", mark: "icone" },
       storeEx: "Padaria Pão Dourado", sloganEx: "Pão quentinho toda hora", detailsEx: "unidade", badgeEx: "Saindo do forno",
@@ -70,6 +75,7 @@
       captions: { "3d-coracao": "Feito com carinho", "3d-presente": "Encomende para sua festa" },
     },
     roupas: {
+      icon: "shirt", bgLabel: "Moda",
       label: "Roupas / calçados", emoji: "👗",
       brand: { name: "Minha Loja", slogan: "Moda que cabe no bolso", c1: "#111111", c2: "#E11D48", c3: "#F5F5F4", mark: "inicial" },
       storeEx: "Bella Moda", sloganEx: "Moda que cabe no bolso", detailsEx: "tam. P ao GG", badgeEx: "Nova coleção",
@@ -82,6 +88,7 @@
       captions: { "3d-coracao": "Peças que você vai amar" },
     },
     pet: {
+      icon: "paw-print", bgLabel: "Pet",
       label: "Pet shop", emoji: "🐾",
       brand: { name: "Meu Pet Shop", slogan: "Carinho para o seu pet", c1: "#7C3AED", c2: "#0EA5E9", c3: "#FDE047", mark: "icone" },
       storeEx: "Pet Amigo", sloganEx: "Carinho para o seu pet", detailsEx: "pacote 10 kg", badgeEx: "Para cães",
@@ -94,6 +101,7 @@
       captions: { "3d-coracao": "Amor de pet", "3d-mascote": "Seu pet aprova!" },
     },
     construcao: {
+      icon: "brick-wall", bgLabel: "Obra e reforma",
       label: "Material de construção", emoji: "🧱",
       brand: { name: "Minha Casa & Construção", slogan: "Tudo para sua obra", c1: "#F59E0B", c2: "#1F2937", c3: "#FDE68A", mark: "icone" },
       storeEx: "Constrular Materiais", sloganEx: "Tudo para sua obra", detailsEx: "saco 50 kg", badgeEx: "Pronta entrega",
@@ -106,6 +114,7 @@
       captions: { "3d-motoboy": "Entregamos na sua obra!", "3d-coracao": "Sua casa do jeito que você quer" },
     },
     beleza: {
+      icon: "sparkles", bgLabel: "Beleza",
       label: "Perfumaria / beleza", emoji: "💄",
       brand: { name: "Minha Perfumaria", slogan: "Beleza que cabe no bolso", c1: "#D63384", c2: "#7B2D8B", c3: "#FFD6EA", mark: "inicial" },
       storeEx: "Perfumaria Bela", sloganEx: "Beleza que cabe no bolso", detailsEx: "frasco 100 ml", badgeEx: "Kit presente",
@@ -118,6 +127,7 @@
       captions: { "3d-coracao": "Beleza e cuidados" },
     },
     outro: {
+      icon: "store", bgLabel: "Sacolas e presentes",
       label: "Outro tipo de loja", emoji: "🏪",
       brand: { name: "Minha Loja", slogan: "As melhores ofertas da cidade", c1: "#2563EB", c2: "#0F172A", c3: "#FACC15", mark: "inicial" },
       storeEx: "Loja do Bairro", sloganEx: "As melhores ofertas da cidade", detailsEx: "unidade", badgeEx: "Leve 3 pague 2",
@@ -132,6 +142,7 @@
   };
   Object.keys(S).forEach((k) => {
     const s = S[k]; s.id = k;
+    s.bg = "bg/" + k + ".webp"; s.bgThumb = "bg/" + k + "-t.webp";
     s.titles = [...new Set([...s.titles, ...COMMON_TITLES])];
     s.badges = [...new Set([...s.badges, ...COMMON_BADGES])];
   });

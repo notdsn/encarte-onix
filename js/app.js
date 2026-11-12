@@ -11,7 +11,7 @@
   // Cores neutras usadas quando a loja ainda não tem marca.
   const NEUTRAL = { c1: "#2563EB", c2: "#0F172A", c3: "#FACC15" };
   // Loja em branco: quem instala o app começa sem nenhuma loja pré-preenchida.
-  const BLANK_BRAND = { preset: "none", name: "", slogan: "", c1: NEUTRAL.c1, c2: NEUTRAL.c2, c3: NEUTRAL.c3, mark: "icone", logo: "", logoSrc: "", logoCutout: false, logoOnly: false, address: "", whatsapp: "", instagram: "" };
+  const BLANK_BRAND = { preset: "none", name: "", slogan: "", c1: NEUTRAL.c1, c2: NEUTRAL.c2, c3: NEUTRAL.c3, mark: "icone", logo: "", logoSrc: "", logoCutout: false, logoOnly: false, address: "", whatsapp: "", instagram: "", pillAlign: "center", nameAlign: "center" };
   // Modelos de marca: um genérico para cada tipo de negócio.
   const PRESETS = {};
   SEG_ORDER.forEach((k) => { PRESETS[k] = { label: SEGS[k].label + " (genérico)", ...SEGS[k].brand, segment: k }; });
@@ -25,14 +25,22 @@
     { id: "beleza", label: "Rosa", sw: ["#d63384", "#fdf0f6", "#4a1d4f"] },
     { id: "black", label: "Black Friday", sw: ["#0d0d0d", "#1c1c1c", "#f5c400"] },
     { id: "natal", label: "Natal", sw: ["#b3121f", "#fbf6ee", "#116b3a"] },
-    { id: "gradiente", label: "Gradiente", sw: ["linear-gradient(135deg,var(--c1),var(--c2))", "#fff", "var(--c3)"], novo: true },
-    { id: "premium", label: "Premium", sw: ["#f7f3ec", "#fff", "#1a1a1a"], novo: true },
-    { id: "neon", label: "Neon Sale", sw: ["#0a0420", "#ff2bd6", "#00f0ff"], novo: true },
+    { id: "gradiente", label: "Gradiente", sw: ["linear-gradient(135deg,var(--c1),var(--c2))", "#fff", "var(--c3)"] },
+    { id: "premium", label: "Premium", sw: ["#f7f3ec", "#fff", "#1a1a1a"] },
+    { id: "neon", label: "Neon Sale", sw: ["#0a0420", "#ff2bd6", "#00f0ff"] },
   ];
 
   const SEG = () => window.segmentOf(state && state.segment);
   const FORMAT_SIZE = { story: { w: 1080, h: 1920 }, feed: { w: 1080, h: 1080 }, a4: { w: 1240, h: 1754 } };
   const MAX_STICKERS = 8;
+  const ALIGNS = ["left", "center", "right"];
+  const ALIGN_LABEL = { left: "Esquerda", center: "Centro", right: "Direita" };
+  const icon = (n, cls) => (window.iconSVG ? window.iconSVG(n, cls) : "");
+  const haptic = () => { try { if (navigator.vibrate && !matchMedia("(prefers-reduced-motion: reduce)").matches) navigator.vibrate(8); } catch {} };
+  const bgSegOf = (f) => (f.bg === "none" ? null : SEGS[f.bg] ? f.bg : state.segment);
+  function alignSegHTML(kind, value, label) {
+    return `<div class="align-seg" role="radiogroup" aria-label="${esc(label)}" data-align-for="${kind}">${ALIGNS.map((a) => `<button type="button" role="radio" aria-checked="${a === value}" data-align="${a}" aria-label="${ALIGN_LABEL[a]}" title="${ALIGN_LABEL[a]}">${ic("align-" + a)}</button>`).join("")}</div>`;
+  }
   const STK_POS = [
     ["footer-left", "Rodapé esquerdo"], ["footer-right", "Rodapé direito"],
     ["tl", "Canto superior esquerdo"], ["tr", "Canto superior direito"],
@@ -114,9 +122,9 @@
   // ---------- model ----------
   function brandFromPreset(key, keep) {
     const p = PRESETS[key];
-    if (!p) return { ...BLANK_BRAND, address: keep?.address || "", whatsapp: keep?.whatsapp || "", instagram: keep?.instagram || "" };
+    if (!p) return { ...BLANK_BRAND, address: keep?.address || "", whatsapp: keep?.whatsapp || "", instagram: keep?.instagram || "", pillAlign: keep?.pillAlign || "center", nameAlign: keep?.nameAlign || "center" };
     return { preset: key, name: p.name, slogan: p.slogan, c1: p.c1, c2: p.c2, c3: p.c3, mark: p.mark, logo: "", logoSrc: "", logoCutout: false, logoOnly: false,
-      address: keep?.address || "", whatsapp: keep?.whatsapp || "", instagram: keep?.instagram || "" };
+      address: keep?.address || "", whatsapp: keep?.whatsapp || "", instagram: keep?.instagram || "", pillAlign: keep?.pillAlign || "center", nameAlign: keep?.nameAlign || "center" };
   }
   function sampleProducts(segId) {
     return window.segmentOf(segId).products.map(([name, details, o, n, badge = ""]) => ({ id: uid(), name, details, oldPrice: o, newPrice: n, photo: "", photoSrc: "", badge }));
@@ -136,7 +144,7 @@
     const from = todayISO();
     const seg = window.segmentOf(segId || (state && state.segment));
     const f = { id: uid("f"), name: name || "Encarte " + formatDateBR(from), updatedAt: Date.now(), theme: seg.theme, format: "story",
-      title: seg.titles[0], dateFrom: from, dateTo: addDaysISO(from, 6), disclaimer: null, products: [], stickers: [] };
+      title: seg.titles[0], dateFrom: from, dateTo: addDaysISO(from, 6), disclaimer: null, products: [], stickers: [], bg: "auto", bgFx: "suave" };
     return withSample ? Object.assign(f, sampleContent(seg.id)) : f;
   }
   function normSticker(s) {
@@ -163,8 +171,11 @@
     // migração: quem já usava o app antes dos tipos de negócio era de farmácia (ou escolheu a marca de mercado/beleza)
     if (!SEGS[st.segment]) st.segment = fresh ? NEW_USER_SEGMENT : st.brand && SEGS[st.brand.preset] ? st.brand.preset : DEFAULT_SEGMENT;
     st.brand = { ...BLANK_BRAND, ...(st.brand || {}) };
+    if (!ALIGNS.includes(st.brand.pillAlign)) st.brand.pillAlign = "center";
+    if (!ALIGNS.includes(st.brand.nameAlign)) st.brand.nameAlign = "center";
     if (!Array.isArray(st.flyers) || !st.flyers.length) st.flyers = [newFlyer("Meu primeiro encarte", true, st.segment)];
     st.flyers = st.flyers.map((f) => ({ ...newFlyer(null, false, st.segment), ...f, products: (f.products || []).slice(0, MAX_PRODUCTS).map(normProduct), stickers: (f.stickers || []).slice(0, MAX_STICKERS).map(normSticker) }));
+    st.flyers.forEach((f) => { if (f.bg !== "auto" && f.bg !== "none" && !SEGS[f.bg]) f.bg = "auto"; if (f.bgFx !== "forte") f.bgFx = "suave"; });
     if (!st.flyers.some((f) => f.id === st.currentId)) st.currentId = st.flyers[0].id;
     st.onboarded = !!st.onboarded;
     return st;
@@ -430,7 +441,7 @@
   function renderThemes() {
     const f = cur();
     $("theme-group").innerHTML = THEMES.map((t) => `<label class="theme-swatch"><input type="radio" name="theme" value="${t.id}" ${t.id === f.theme ? "checked" : ""}>
-      <span class="sw" style="--c1:${state.brand.c1};--c2:${state.brand.c2};--c3:${state.brand.c3}"><i style="background:${t.sw[0]}"></i><i style="background:${t.sw[1]}"></i><i style="background:${t.sw[2]}"></i></span><span class="th-label">${esc(t.label)}</span>${t.novo ? '<em class="new">novo</em>' : ""}</label>`).join("");
+      <span class="sw" style="--c1:${state.brand.c1};--c2:${state.brand.c2};--c3:${state.brand.c3}"><i style="background:${t.sw[0]}"></i><i style="background:${t.sw[1]}"></i><i style="background:${t.sw[2]}"></i></span><span class="th-label">${esc(t.label)}</span></label>`).join("");
     document.querySelectorAll('input[name="theme"]').forEach((i) => i.addEventListener("change", () => { if (i.checked) { cur().theme = i.value; persist(); renderFlyer(); } }));
   }
   function fillForm() {
@@ -444,9 +455,23 @@
     el.address.value = b.address || ""; el.whatsapp.value = b.whatsapp || ""; el.instagram.value = b.instagram || "";
     document.querySelectorAll('input[name="format"]').forEach((i) => (i.checked = i.value === f.format));
     el.curName.textContent = f.name;
-    renderSegmentUI(); renderThemes(); updateLogoChrome(); renderProductList(); renderStickerUI();
+    renderSegmentUI(); renderThemes(); renderBgPicker(); updateLogoChrome(); renderProductList(); renderStickerUI(); renderAlignUI();
   }
-  function segOptions() { return SEG_ORDER.map((k) => `<option value="${k}">${SEGS[k].emoji} ${esc(SEGS[k].label)}</option>`).join(""); }
+  function renderBgPicker() {
+    const f = cur(), g = $("bg-group"); if (!g) return;
+    const autoSeg = SEGS[state.segment] || SEGS.outro;
+    const tile = (val, thumb, label, sub) => `<button type="button" class="bg-tile${thumb ? " skel" : " is-none"}" role="radio" aria-checked="${f.bg === val}" data-bg="${val}">${thumb ? `<img src="${thumb}" alt="" loading="lazy" decoding="async" onload="this.parentNode.classList.remove('skel')">` : ic("image-off")}<span class="bg-cap"><b>${esc(label)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span></button>`;
+    g.innerHTML = tile("auto", autoSeg.bgThumb, "Automático", autoSeg.bgLabel)
+      + SEG_ORDER.map((k) => tile(k, SEGS[k].bgThumb, SEGS[k].bgLabel, "")).join("")
+      + tile("none", "", "Sem foto", "");
+    document.querySelectorAll("#bgfx-group button").forEach((b) => { b.setAttribute("aria-checked", String((f.bgFx || "suave") === b.dataset.fx)); b.disabled = f.bg === "none"; });
+    const curSeg = bgSegOf(f); $("bg-cur").textContent = curSeg ? SEGS[curSeg].bgLabel : "Sem foto";
+  }
+  function renderAlignUI() {
+    const slot = $("name-align-slot"); if (slot) slot.innerHTML = alignSegHTML("name", state.brand.nameAlign || "center", "Posição do nome da loja");
+    document.querySelectorAll('.align-seg[data-align-for="pill"] button').forEach((b) => b.setAttribute("aria-checked", String(b.dataset.align === (state.brand.pillAlign || "center"))));
+  }
+  function segOptions() { return SEG_ORDER.map((k) => `<option value="${k}">${esc(SEGS[k].label)}</option>`).join(""); }
   function renderSegmentUI() {
     const seg = SEG();
     const fs = $("fld-segment"); if (fs) { if (!fs.options.length) fs.innerHTML = segOptions(); fs.value = seg.id; }
@@ -460,7 +485,7 @@
   function logoHTML(b) {
     if (b.logo) return `<div class="fl-logo img"><img src="${b.logo}" alt=""></div>`;
     if (b.mark === "nenhum") return "";
-    if (b.mark === "icone") return `<div class="fl-logo"><span class="emo">${SEG().emoji}</span></div>`;
+    if (b.mark === "icone") return `<div class="fl-logo">${icon(SEG().icon, "fl-ico")}</div>`;
     if (b.mark === "inicial") return `<div class="fl-logo"><span class="ini">${esc((b.name || "?").trim().charAt(0).toUpperCase())}</span></div>`;
     return `<div class="fl-logo"><span class="cross"></span></div>`;
   }
@@ -682,7 +707,7 @@
             <label class="field">Posição<select data-act="pos">${posOpts}</select></label>
             <div class="field">Tamanho<div class="stk-size" role="group" aria-label="Tamanho">${sizes}</div></div>
           </div>
-          <label class="field">Texto ao lado (opcional)<input type="text" data-act="caption" maxlength="48" value="${esc(s.caption)}" placeholder="ex.: Entregamos em casa!"></label>
+          <div class="cap-row"><label class="field">Texto ao lado (opcional)<input type="text" data-act="caption" maxlength="48" value="${esc(s.caption)}" placeholder="ex.: Entregamos em casa!"></label><div class="field">Alinhar o texto${alignSegHTML("pill", state.brand.pillAlign || "center", "Alinhar o texto da pílula")}</div></div>
         </div>
         <button type="button" class="p-remove" data-act="remove" aria-label="Remover ${esc(label)}">${ic("trash-2")}</button>
       </article>`;
@@ -746,8 +771,8 @@
   }
   function contactBits(b) {
     const out = [];
-    if (b.address?.trim()) out.push(`<span>📍 ${esc(b.address.trim())}</span>`);
-    if (b.whatsapp?.trim()) out.push(`<span>WhatsApp ${esc(b.whatsapp.trim())}</span>`);
+    if (b.address?.trim()) out.push(`<span>${icon("map-pin", "fl-cico")}${esc(b.address.trim())}</span>`);
+    if (b.whatsapp?.trim()) out.push(`<span>${icon("message-circle", "fl-cico")}WhatsApp ${esc(b.whatsapp.trim())}</span>`);
     if (b.instagram?.trim()) { let ig = b.instagram.trim(); if (!ig.startsWith("@") && !ig.includes("/")) ig = "@" + ig; out.push(`<span>${esc(ig)}</span>`); }
     return out;
   }
@@ -774,9 +799,11 @@
     };
     const corners = stks.filter((s) => /^(tl|tr|bl|br)$/.test(s.pos)).map(stkNode).join("");
     const footStk = stks.filter((s) => String(s.pos).startsWith("footer")).map(stkNode).join("");
-    return `<header class="fl-head"><div class="fl-brand">${logoHTML(b)}${hideName ? "" : `<div class="fl-brand-text"><div class="fl-name">${esc(b.name || "Nome da sua loja")}</div>${b.slogan ? `<div class="fl-tag">${esc(b.slogan)}</div>` : ""}</div>`}</div>
+    const bgSeg = bgSegOf(f);
+    const photo = bgSeg ? `<div class="fl-photo" aria-hidden="true"><img src="${SEGS[bgSeg].bg}" alt="" decoding="async"></div>` : "";
+    return `${photo}<header class="fl-head"><div class="fl-brand">${logoHTML(b)}${hideName ? "" : `<div class="fl-brand-text"><div class="fl-name">${esc(b.name || "Nome da sua loja")}</div>${b.slogan ? `<div class="fl-tag">${esc(b.slogan)}</div>` : ""}</div>`}</div>
       <div class="fl-band"><h1 class="fl-title">${esc(f.title || "Ofertas da Semana")}</h1>${dates ? `<p class="fl-dates">${esc(dates)}</p>` : ""}</div></header>
-      <div class="fl-body"><section class="fl-grid">${cards}</section>${corners}</div>
+      <div class="fl-body">${bgSeg ? '<div class="fl-veil" aria-hidden="true"></div>' : ""}<section class="fl-grid">${cards}</section>${corners}</div>
       <footer class="fl-foot">${footStk ? `<div class="fl-stk-foot">${footStk}</div>` : ""}${contacts.length ? `<div class="fl-contact">${contacts.join("")}</div>` : ""}${disc ? `<p class="fl-disc">${esc(disc)}</p>` : ""}</footer>`;
   }
   function applyFlyerAttrs(node, f, b) {
@@ -792,6 +819,8 @@
       format: f.format, theme: f.theme, count: String(n), cols: String(colsFor(f.format, n)), density: densityFor(n),
       stkTop: sizeOf(top), stkBottom: sizeOf(bot),
       stkTl: top.some((s) => s.pos === "tl") ? "1" : "", stkTr: top.some((s) => s.pos === "tr") ? "1" : "",
+      photo: bgSegOf(f) ? "1" : "", bgFx: f.bgFx === "forte" ? "forte" : "suave",
+      pillAlign: ALIGNS.includes(b.pillAlign) ? b.pillAlign : "center", nameAlign: ALIGNS.includes(b.nameAlign) ? b.nameAlign : "center",
       stkBl: bot.some((s) => s.pos === "bl") ? "1" : "", stkBr: bot.some((s) => s.pos === "br") ? "1" : "",
     });
     node.style.width = size.w + "px"; node.style.height = size.h + "px";
@@ -882,7 +911,7 @@
   function onbError(msg) { const e = $("onb-error"); if (!e) return; e.textContent = msg; e.hidden = !msg; }
   let onbSeg = null;
   function renderOnbSegs() {
-    $("onb-seg").innerHTML = SEG_ORDER.map((k) => `<button type="button" class="biz-item" role="radio" aria-checked="${k === onbSeg}" data-seg="${k}"><span class="biz-emo" aria-hidden="true">${SEGS[k].emoji}</span><span>${esc(SEGS[k].label)}</span></button>`).join("");
+    $("onb-seg").innerHTML = SEG_ORDER.map((k) => `<button type="button" class="biz-item" role="radio" aria-checked="${k === onbSeg}" data-seg="${k}"><span class="biz-photo skel" aria-hidden="true"><img src="${SEGS[k].bgThumb}" alt="" loading="lazy" decoding="async" onload="this.parentNode.classList.remove('skel')"><span class="biz-ico">${ic(SEGS[k].icon)}</span></span><span class="biz-label">${esc(SEGS[k].label)}</span></button>`).join("");
     $("onb-store").placeholder = onbSeg ? "ex.: " + window.segmentOf(onbSeg).storeEx : "Nome da sua loja";
   }
   $("onb-seg").addEventListener("click", (e) => { const b = e.target.closest(".biz-item"); if (!b) return; onbSeg = b.dataset.seg; renderOnbSegs(); onbError(""); });
@@ -992,6 +1021,20 @@
       persist(); renderProductList(); renderFlyer();
       el.list.querySelector(".p-card:last-child input[data-act='name']")?.focus();
     });
+    $("bg-group").addEventListener("click", (e) => {
+      const t = e.target.closest(".bg-tile"); if (!t) return;
+      cur().bg = t.dataset.bg; persist(); renderBgPicker(); renderFlyer();
+    });
+    $("bgfx-group").addEventListener("click", (e) => {
+      const t = e.target.closest("button[data-fx]"); if (!t || t.disabled) return;
+      cur().bgFx = t.dataset.fx; persist(); renderBgPicker(); renderFlyer();
+    });
+    document.addEventListener("click", (e) => {
+      const b = e.target.closest(".align-seg button[data-align]"); if (!b) return;
+      const kind = b.closest(".align-seg").dataset.alignFor;
+      state.brand[kind === "name" ? "nameAlign" : "pillAlign"] = b.dataset.align;
+      persist(); renderAlignUI(); renderFlyer();
+    });
     $("btn-png").addEventListener("click", () => exportPng(false));
     $("btn-share").addEventListener("click", () => exportPng(true));
     $("btn-print").addEventListener("click", printA4);
@@ -1094,13 +1137,15 @@
   function applyMode(dark) {
     document.documentElement.dataset.mode = dark ? "dark" : "light";
     $("btn-theme-mode").innerHTML = ic(dark ? "sun" : "moon");
+    $("btn-theme-mode").setAttribute("aria-label", dark ? "Usar tema claro" : "Usar tema escuro");
     $("btn-theme-mode").setAttribute("aria-pressed", String(dark));
     document.querySelector('meta[name="theme-color"]').content = dark ? "#0b1020" : "#1C3FAA";
   }
   function initChrome() {
     let saved = null; try { saved = localStorage.getItem("vitrine-mode"); } catch {}
     applyMode(saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches);
-    $("btn-theme-mode").addEventListener("click", () => { const d = document.documentElement.dataset.mode !== "dark"; applyMode(d); try { localStorage.setItem("vitrine-mode", d ? "dark" : "light"); } catch {} });
+    $("btn-theme-mode").addEventListener("click", () => { const d = document.documentElement.dataset.mode !== "dark"; const go = () => applyMode(d);
+      if (document.startViewTransition && !matchMedia("(prefers-reduced-motion: reduce)").matches) document.startViewTransition(go); else go(); try { localStorage.setItem("vitrine-mode", d ? "dark" : "light"); } catch {} });
     const tabs = [...document.querySelectorAll(".tab[data-go]")];
     const smooth = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
     tabs.forEach((b) => b.addEventListener("click", () => { const s = $(b.dataset.go); const y = s.getBoundingClientRect().top + scrollY - 76; scrollTo({ top: Math.max(0, y), behavior: smooth }); }));
@@ -1109,6 +1154,27 @@
       tabs.forEach((t) => io.observe($(t.dataset.go)));
     }
     $("btn-export").addEventListener("click", () => openDialog($("dlg-export")));
+    // toque com resposta (vibração curtinha + efeito de pressionar)
+    document.addEventListener("pointerdown", (e) => {
+      const t = e.target.closest("button, .file-btn, .seg-item, .theme-swatch, .chip, .bg-tile, .biz-item, .stk-pick"); if (!t || t.disabled) return;
+      t.classList.add("is-pressed");
+      const up = () => { t.classList.remove("is-pressed"); removeEventListener("pointerup", up); removeEventListener("pointercancel", up); };
+      addEventListener("pointerup", up); addEventListener("pointercancel", up);
+    }, { passive: true });
+    document.addEventListener("click", (e) => { if (e.target.closest(".tab, .tab-fab, .btn-primary, .bg-tile, .biz-item, .align-seg button, .theme-swatch, .stk-pick, #btn-theme-mode")) haptic(); });
+    // painéis aparecem suavemente ao rolar
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reduce && "IntersectionObserver" in window) {
+      const panels = [...document.querySelectorAll(".editor-col .panel")];
+      panels.forEach((p) => { if (p.getBoundingClientRect().top > innerHeight) p.classList.add("reveal"); });
+      const rio = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); rio.unobserve(e.target); } }), { rootMargin: "0px 0px -8% 0px" });
+      panels.forEach((p) => rio.observe(p));
+    }
+  }
+  function hideSplash() {
+    const sp = $("splash"); document.documentElement.classList.add("app-ready");
+    if (!sp) return;
+    sp.classList.add("out"); setTimeout(() => sp.remove(), 450);
   }
 
   // ---------- boot ----------
@@ -1118,9 +1184,11 @@
     state = normalize(saved);
     bindForm(); initStickers(); fillForm(); renderFlyer(); initSortable(); initChrome();
     window.addEventListener("resize", () => scalePreview());
+    $("preview-frame").classList.remove("is-loading");
+    hideSplash();
     if (!state.onboarded) startOnboarding();
     if ("serviceWorker" in navigator && window.isSecureContext) navigator.serviceWorker.register("sw.js").catch(() => {});
-    window.__vitrine = { get state() { return state; }, renderPngBlob, renderFlyer, layoutPills, renderStickerUI, renderStickerGallery, openEnhance, openCrop, applyLogoFile, shrinkLogo, updateLogoChrome, persist, fillForm, setStickerSet(s) { stkSet = s; renderStickerGallery(); } };
+    window.__vitrine = { get state() { return state; }, renderBgPicker, renderAlignUI, renderPngBlob, renderFlyer, layoutPills, renderStickerUI, renderStickerGallery, openEnhance, openCrop, applyLogoFile, shrinkLogo, updateLogoChrome, persist, fillForm, setStickerSet(s) { stkSet = s; renderStickerGallery(); } };
   }
   boot();
 })();

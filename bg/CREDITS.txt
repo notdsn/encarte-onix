@@ -1,0 +1,19 @@
+Fundos com foto — Vitrine de Ofertas 2.3.0
+
+Todas as imagens desta pasta foram geradas por IA especialmente para o app
+(Nextwave Studio Brasil, nov/2026). Não usam fotos de bancos de imagem, marcas,
+logotipos ou rótulos de produtos reais, e não exigem atribuição.
+
+farmacia.webp    itens de farmácia (blísteres, cápsulas, estetoscópio, termômetro)
+mercado.webp     mercearia (arroz, feijão, massa, ovos, azeite, café, pão)
+acougue.webp     carnes (picanha, bifes, linguiça, frango, alecrim)
+hortifruti.webp  frutas e verduras
+padaria.webp     pães, croissants, bolo de cenoura e café
+roupas.webp      moda (jeans, vestido, tênis, bolsa, chapéu)
+pet.webp         pet (ração, brinquedos, guia, filhote)
+construcao.webp  obra e reforma (tinta, rolo, pisos, tijolos, ferramentas)
+beleza.webp      beleza (perfumes, batons, maquiagem, pétalas)
+outro.webp       sacolas, presentes e etiquetas em branco
+
+*-t.webp são miniaturas das mesmas imagens.
+Ícones: Lucide (ISC), ver icons/LUCIDE-LICENSE.txt.

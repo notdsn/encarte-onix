@@ -10,11 +10,13 @@ PWA instalável, funciona offline depois da primeira visita. Tudo fica salvo só
 
 1. Abra o link no celular (ou instale o app a partir da tela inicial).
 2. Escolha o formato: **Story/Status** (9:16), **Feed** (1:1) ou **A4** para impressão.
-3. Escolha um modelo (Clássico, Gradiente, Premium, Neon Sale e outros).
+3. Escolha um modelo (Clássico, Gradiente, Premium, Neon Sale e outros) e o **fundo com foto**: ele acompanha o tipo de negócio sozinho (farmácia, mercado, açougue, hortifrúti…), mas dá para trocar, deixar mais forte ou tirar.
 4. Preencha o título, o período e os dados da loja (nome, cores, logo, WhatsApp…). Dá para enviar o logo no primeiro acesso ou depois, em **Sua loja** (PNG, JPG ou WebP, com opção de tirar o fundo com IA).
 5. Adicione até 12 produtos com nome, detalhes, preços de/por, foto e selo.
-6. Em **Figurinhas**, escolha artes **3D** ou **Clássicas** (motoboy, frete grátis, só hoje…) que acompanham as cores da loja.
+6. Em **Figurinhas**, escolha artes **3D** ou **Clássicas** (motoboy, frete grátis, só hoje…) que acompanham as cores da loja. O texto da pílula e o nome da loja podem ficar à esquerda, no centro ou à direita.
 7. Em cada foto, use **Deixar bonita com IA** para recortar o fundo e melhorar a imagem no próprio aparelho (na primeira vez baixa um modelo de ~15 MB; depois funciona offline).
 8. Toque em **Baixar PNG**, **Compartilhar** ou **Imprimir / PDF**.
 
 Use **Exportar backup** / **Importar backup** ao trocar de celular. [Política de privacidade](privacidade.html).
+
+Novidades da 2.3.0: fundos com foto por tipo de negócio, tema claro/escuro com transição suave, tela de abertura e boas-vindas novas, alinhamento do nome e das pílulas. Créditos das imagens em `bg/CREDITS.txt`.
