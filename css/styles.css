@@ -845,7 +845,7 @@ body { padding-bottom: calc(var(--tab-h) + 16px); font-family: Jakarta, Nunito, 
 
 /* Logo no cabeçalho do encarte: cabe junto do nome, sem estourar */
 .fl-brand { min-width: 0; max-width: 100%; overflow: hidden; }
-.fl-brand-text { min-width: 0; flex: 1 1 auto; }
+.fl-brand-text { min-width: 0; flex: 0 1 auto; }
 .fl-name, .fl-tag { overflow-wrap: anywhere; word-break: break-word; }
 .fl-logo.img { background: #fff; }
 .fl-logo.img img { width: 100%; height: 100%; object-fit: contain; padding: 8%; box-sizing: border-box; }
@@ -1163,3 +1163,85 @@ body {
 .flyer[data-format="a4"] .card-photo { min-height: 72px; }
 .flyer[data-format="story"][data-density="hero"] .card-photo,
 .flyer[data-format="a4"][data-density="hero"] .card-photo { min-height: 180px; }
+
+/* ===== v2.2.5 — nome da loja centralizado no cabeçalho ===== */
+.fl-brand {
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+}
+.fl-brand-text {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: calc(100% - var(--logo) - 16px);
+  text-align: left;
+}
+.fl-brand:not(:has(.fl-logo)) .fl-brand-text {
+  max-width: 100%;
+  text-align: center;
+}
+.flyer[data-format="feed"] .fl-brand-text {
+  max-width: calc(100% - var(--logo) - 10px);
+}
+.flyer[data-format="feed"] .fl-brand:not(:has(.fl-logo)) .fl-brand-text {
+  max-width: 100%;
+}
+
+/* ===== v2.2.5 — pílulas com texto no centro + rodapé sem sobrepor ===== */
+.fl-stk-cap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  box-sizing: border-box;
+  line-height: 1.15;
+  padding: 0.45em 0.9em;
+  border-radius: 2em;
+  max-width: min(280px, 100%);
+  min-width: 0;
+  min-height: 1.6em;
+}
+.fl-stk-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 16px 28px;
+  margin-bottom: 14px;
+  width: 100%;
+  min-width: 0;
+}
+.fl-stk-foot .fl-stk {
+  position: static;
+  margin: 0;
+  max-width: calc(50% - 14px);
+  min-width: 0;
+  flex: 0 1 auto;
+  justify-content: center;
+}
+.fl-stk-foot .fl-stk[data-pos="footer-left"],
+.fl-stk-foot .fl-stk[data-pos="footer-right"] {
+  margin: 0;
+}
+.fl-stk-foot .fl-stk-cap {
+  text-align: center;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.fl-stk .stk { flex: 0 0 auto; }
+.fl-contact {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  position: relative;
+  z-index: 1;
+}
+.card-badge, .card-off {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-wrap: balance;
+}

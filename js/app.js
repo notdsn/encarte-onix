@@ -797,10 +797,31 @@
     node.style.width = size.w + "px"; node.style.height = size.h + "px";
     node.style.setProperty("--c1", safeColor(b.c1, NEUTRAL.c1)); node.style.setProperty("--c2", safeColor(b.c2, NEUTRAL.c2)); node.style.setProperty("--c3", safeColor(b.c3, NEUTRAL.c3));
   }
+  function layoutPills(root) {
+    (root || el.flyer).querySelectorAll(".fl-stk-cap, .card-badge").forEach((node) => {
+      const raw = (node.textContent || "").replace(/\s+/g, " ").trim();
+      if (!raw) return;
+      node.textContent = raw;
+      node.style.fontSize = "";
+      const base = parseFloat(getComputedStyle(node).fontSize) || 16;
+      let size = base;
+      const lineH = () => {
+        const lh = getComputedStyle(node).lineHeight;
+        const n = parseFloat(lh);
+        return !n || lh === "normal" ? size * 1.15 : n;
+      };
+      const lines = () => Math.max(1, Math.round(node.scrollHeight / lineH()));
+      while (size > base * 0.68 && (lines() > 2 || node.scrollWidth > node.clientWidth + 2)) {
+        size *= 0.94;
+        node.style.fontSize = size + "px";
+      }
+    });
+  }
   function renderFlyer() {
     const f = cur(), b = state.brand;
     applyFlyerAttrs(el.flyer, f, b);
     el.flyer.innerHTML = flyerHTML(f, b);
+    layoutPills(el.flyer);
     scalePreview();
     if (window.recolorStickers3D) window.recolorStickers3D(el.flyer, safeColor(b.c1, NEUTRAL.c1));
   }
@@ -1000,6 +1021,7 @@
     document.body.append(node, cover);
     try {
       if (window.recolorStickers3D) await window.recolorStickers3D(node, safeColor(state.brand.c1, NEUTRAL.c1));
+      layoutPills(node);
       await document.fonts.ready; await waitImgs(node);
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       const blob = await window.htmlToImage.toBlob(node, { pixelRatio: 1, canvasWidth: size.w, canvasHeight: size.h, width: size.w, height: size.h, backgroundColor: getComputedStyle(node).backgroundColor || "#fff" });
@@ -1098,7 +1120,7 @@
     window.addEventListener("resize", () => scalePreview());
     if (!state.onboarded) startOnboarding();
     if ("serviceWorker" in navigator && window.isSecureContext) navigator.serviceWorker.register("sw.js").catch(() => {});
-    window.__vitrine = { get state() { return state; }, renderPngBlob, renderFlyer, renderStickerUI, renderStickerGallery, openEnhance, openCrop, applyLogoFile, shrinkLogo, updateLogoChrome, persist, fillForm, setStickerSet(s) { stkSet = s; renderStickerGallery(); } };
+    window.__vitrine = { get state() { return state; }, renderPngBlob, renderFlyer, layoutPills, renderStickerUI, renderStickerGallery, openEnhance, openCrop, applyLogoFile, shrinkLogo, updateLogoChrome, persist, fillForm, setStickerSet(s) { stkSet = s; renderStickerGallery(); } };
   }
   boot();
 })();

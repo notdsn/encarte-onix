@@ -1,4 +1,4 @@
-const CACHE = "vitrine-v2.2.4";
+const CACHE = "vitrine-v2.2.5";
 const ASSETS = ["./", "index.html", "privacidade.html", "css/styles.css", "fonts/fonts.css",
   "fonts/nunito-latin.woff2", "fonts/nunito-latin-ext.woff2", "fonts/oswald-latin.woff2", "fonts/oswald-latin-ext.woff2", "fonts/jakarta-latin.woff2", "fonts/jakarta-latin-ext.woff2",
   "js/app.js", "js/stickers.js", "js/stickers3d.js", "js/segments.js", "js/enhance.js", "js/html-to-image.min.js", "js/sortable.min.js", "manifest.webmanifest",
